@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.yushan</groupId>
-    <artifactId>analytics-service</artifactId>
+    <artifactId>engagement-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>analytics-service</name>
-    <description>Analytics Service for Yushan Web Novel Platform</description>
+    <name>engagement-service</name>
+    <description>Engagement Service for Yushan Web Novel Platform</description>
     <url/>
     <licenses>
         <license/>
