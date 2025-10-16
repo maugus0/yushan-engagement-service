@@ -13,12 +13,12 @@ import java.util.Map;
 public class HealthController {
 
     @GetMapping("/health")
-    public Map health() {
-        Map response = new HashMap<>();
+    public Map<String, Object> health() {
+        Map<String, Object> response = new HashMap<>();
         response.put("status", "UP");
         response.put("service", "engagement-service");
         response.put("timestamp", LocalDateTime.now());
-        response.put("message", "Enagagement Service is running!");
+        response.put("message", "Engagement Service is running!");
         return response;
     }
 }
