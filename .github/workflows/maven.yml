@@ -256,14 +256,14 @@ jobs:
         run: |
           docker run -d \
             --name engagement-service-test \
-            -p 8082:8082 \
+            -p 8084:8084 \
             -e SPRING_PROFILES_ACTIVE=test \
             ghcr.io/${{ github.repository }}:latest || true
           
           # Wait for service to be ready
           echo "Waiting for service to start..."
           for i in {1..30}; do
-            if curl -s http://localhost:8082/actuator/health > /dev/null 2>&1; then
+            if curl -s http://localhost:8084/actuator/health > /dev/null 2>&1; then
               echo "Service is ready"
               exit 0
             fi
@@ -276,7 +276,7 @@ jobs:
       - name: ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.13.0
         with:
-          target: 'http://localhost:8082'
+          target: 'http://localhost:8084'
           cmd_options: "-a -m 10 -J zap.json -w zap.md -r zap.html"
         continue-on-error: true
 
