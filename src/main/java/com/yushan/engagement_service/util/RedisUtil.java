@@ -9,8 +9,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Redis utility class for caching operations.
- * Provides methods for caching novel data, view counts, and popular queries.
+ * Redis utility class for caching comment-related data in the engagement service.
+ * Provides methods for caching comments, comment counts, and related queries.
  */
 @Component
 public class RedisUtil {
