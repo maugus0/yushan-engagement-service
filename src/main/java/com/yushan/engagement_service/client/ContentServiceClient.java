@@ -11,7 +11,7 @@ public class ContentServiceClient {
 
     private final RestTemplate restTemplate;
 
-    @Value("${services.content.url:http://localhost:8081}")
+    @Value("${services.content.url:http://localhost:8082}")
     private String contentServiceUrl;
 
     public ContentServiceClient(RestTemplate restTemplate) {
