@@ -2,6 +2,8 @@ package com.yushan.engagement_service.security;
 
 import org.springframework.security.access.expression.method.MethodSecurityExpressionOperations;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.AuthenticationTrustResolver;
+import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.core.Authentication;
 
 /**
@@ -16,6 +18,9 @@ public class SecurityExpressionRoot implements MethodSecurityExpressionOperation
     private Object filterObject;
     private Object returnObject;
     private Object target;
+
+    // Add this field
+    private final AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
 
     public SecurityExpressionRoot(Authentication authentication) {
         this.authentication = copyAuthentication(authentication);
@@ -78,24 +83,23 @@ public class SecurityExpressionRoot implements MethodSecurityExpressionOperation
 
     @Override
     public boolean isAuthenticated() {
+        // skip trustResolver，justify authentication
         return authentication != null && authentication.isAuthenticated();
     }
 
     @Override
     public boolean isAnonymous() {
-        return authentication == null || !authentication.isAuthenticated();
+        return trustResolver.isAnonymous(authentication);
     }
 
     @Override
     public boolean isRememberMe() {
-        return authentication != null && authentication.isAuthenticated() && 
-               !(authentication instanceof org.springframework.security.authentication.UsernamePasswordAuthenticationToken);
+        return trustResolver.isRememberMe(authentication);
     }
 
     @Override
     public boolean isFullyAuthenticated() {
-        return authentication != null && authentication.isAuthenticated() && 
-               !(authentication instanceof org.springframework.security.authentication.UsernamePasswordAuthenticationToken);
+        return trustResolver.isFullyAuthenticated(authentication);
     }
 
     @Override
