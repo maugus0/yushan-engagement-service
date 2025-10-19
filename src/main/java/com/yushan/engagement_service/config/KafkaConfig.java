@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Kafka configuration for Content Service
+ * Kafka configuration for Engagement Service
  * 
  * This configuration sets up Kafka producers for publishing novel events
  * to Analytics, Gamification, and Engagement services.
