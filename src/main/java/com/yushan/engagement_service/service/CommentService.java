@@ -290,7 +290,7 @@ public class CommentService {
      */
     public CommentStatisticsDTO getChapterCommentStats(Integer chapterId) {
         // Validate chapter exists via content service
-        ChapterDTO chapter = contentServiceClient.getChapter(chapterId);
+        ChapterDetailResponseDTO chapter = contentServiceClient.getChapter(chapterId);
         if (chapter == null || !Boolean.TRUE.equals(chapter.getIsValid())) {
             throw new ResourceNotFoundException("Chapter not found");
         }
@@ -406,7 +406,7 @@ public class CommentService {
         Comment mostCommentedChapterComment = commentMapper.selectMostCommentedChapter();
         if (mostCommentedChapterComment != null) {
             stats.setMostCommentedChapterId(mostCommentedChapterComment.getChapterId());
-            ChapterDTO chapter = contentServiceClient.getChapter(mostCommentedChapterComment.getChapterId());
+            ChapterDetailResponseDTO chapter = contentServiceClient.getChapter(mostCommentedChapterComment.getChapterId());
             if (chapter != null) {
                 stats.setMostCommentedChapterTitle(chapter.getTitle());
             }
@@ -506,7 +506,7 @@ public class CommentService {
 
         // Get chapter title from ContentService via client
         try {
-            ChapterDTO chapter = contentServiceClient.getChapter(comment.getChapterId());
+            ChapterDetailResponseDTO chapter = contentServiceClient.getChapter(comment.getChapterId());
             if (chapter != null) {
                 dto.setChapterTitle(chapter.getTitle());
             } else {

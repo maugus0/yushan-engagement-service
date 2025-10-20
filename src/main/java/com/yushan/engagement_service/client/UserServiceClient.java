@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.HttpClientErrorException;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @Component
@@ -17,7 +18,7 @@ public class UserServiceClient {
     private String userServiceUrl;
 
     public UserServiceClient(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+        this.restTemplate = Objects.requireNonNull(restTemplate, "RestTemplate cannot be null");
     }
 
     public UserDTO getUser(UUID userId) {
