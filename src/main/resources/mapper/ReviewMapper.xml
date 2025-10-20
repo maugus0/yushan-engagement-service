@@ -194,7 +194,7 @@
     order by create_time desc
   </select>
 
-  <select id="selectReviewsWithPagination" resultMap="BaseResultMap" parameterType="com.yushan.engagement_service.dto.ReviewSearchRequestDTO">
+  <select id="selectReviewsWithPagination" resultMap="BaseResultMap" parameterType="com.yushan.engagement_service.dto.review.ReviewSearchRequestDTO">
     select 
     <include refid="Base_Column_List" />
     from review
@@ -226,7 +226,7 @@
     limit #{size} offset #{page} * #{size}
   </select>
 
-  <select id="countReviews" resultType="long" parameterType="com.yushan.engagement_service.dto.ReviewSearchRequestDTO">
+  <select id="countReviews" resultType="long" parameterType="com.yushan.engagement_service.dto.review.ReviewSearchRequestDTO">
     select count(*)
     from review
     <where>

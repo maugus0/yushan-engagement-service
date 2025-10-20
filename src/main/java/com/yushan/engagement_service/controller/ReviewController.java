@@ -2,6 +2,7 @@ package com.yushan.engagement_service.controller;
 
 import com.yushan.engagement_service.dto.review.*;
 import com.yushan.engagement_service.dto.common.*;
+import com.yushan.engagement_service.enums.ErrorCode;
 import com.yushan.engagement_service.security.CustomUserDetails;
 import com.yushan.engagement_service.service.ReviewService;
 import jakarta.validation.Valid;
@@ -63,7 +64,7 @@ public class ReviewController {
         if (deleted) {
             return ApiResponse.success("Review deleted successfully");
         }
-        return ApiResponse.error(400, "Failed to delete review");
+        return ApiResponse.error(ErrorCode.BAD_REQUEST, "Failed to delete review");
     }
 
     /**
@@ -200,7 +201,7 @@ public class ReviewController {
         if (deleted) {
             return ApiResponse.success("Review deleted successfully by admin");
         }
-        return ApiResponse.error(400, "Failed to delete review");
+        return ApiResponse.error(ErrorCode.BAD_REQUEST, "Failed to delete review");
     }
 
     /**

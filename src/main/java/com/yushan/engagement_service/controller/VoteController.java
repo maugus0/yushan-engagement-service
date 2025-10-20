@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/votes")
 @CrossOrigin(origins = "*")
 public class VoteController {
 
@@ -23,20 +23,20 @@ public class VoteController {
     /**
      * Toggle a vote for a novel
      */
-    @PostMapping("/novels/{novelId}/vote")
+    @PostMapping("/novels/{novelId}")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<VoteResponseDTO> toggleVote(@PathVariable Integer novelId,
                                                    Authentication authentication) {
         UUID userId = getUserIdFromAuthentication(authentication);
         VoteResponseDTO response = voteService.toggleVote(novelId, userId);
 
-        return ApiResponse.success("Voted successfully", response);
+        return ApiResponse.success("Vote toggled successfully", response);
     }
 
     /**
      * Get a user's all vote record
      */
-    @GetMapping("/users/votes")
+    @GetMapping("/users")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<PageResponseDTO<VoteUserResponseDTO>> getUserVotes(
             @RequestParam(defaultValue = "0") int page,

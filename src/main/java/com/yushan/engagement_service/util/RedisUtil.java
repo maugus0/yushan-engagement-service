@@ -9,8 +9,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Redis utility class for caching comment-related data in the engagement service.
- * Provides methods for caching comments, comment counts, and related queries.
+ * Redis utility class for caching engagement-related data.
+ * Provides methods for caching comments, reviews, votes and related queries.
  */
 @Component
 public class RedisUtil {
@@ -19,18 +19,18 @@ public class RedisUtil {
     private RedisTemplate<String, Object> redisTemplate;
 
     // Cache key prefixes
-    private static final String NOVEL_PREFIX = "novel:";
-    private static final String VIEW_COUNT_PREFIX = "view_count:";
-    private static final String POPULAR_PREFIX = "popular:";
-    private static final String SEARCH_PREFIX = "search:";
-    private static final String CATEGORY_PREFIX = "category:";
+    private static final String COMMENT_PREFIX = "comment:";
+    private static final String REVIEW_PREFIX = "review:";
+    private static final String VOTE_PREFIX = "vote:";
+    private static final String LIKE_PREFIX = "like:";
+    private static final String ENGAGEMENT_PREFIX = "engagement:";
 
     // Cache TTL constants
-    private static final Duration NOVEL_CACHE_TTL = Duration.ofHours(1);
-    private static final Duration VIEW_COUNT_CACHE_TTL = Duration.ofMinutes(30);
-    private static final Duration POPULAR_CACHE_TTL = Duration.ofMinutes(15);
-    private static final Duration SEARCH_CACHE_TTL = Duration.ofMinutes(10);
-    private static final Duration CATEGORY_CACHE_TTL = Duration.ofMinutes(30);
+    private static final Duration COMMENT_CACHE_TTL = Duration.ofHours(1);
+    private static final Duration REVIEW_CACHE_TTL = Duration.ofHours(2);
+    private static final Duration VOTE_CACHE_TTL = Duration.ofHours(1);
+    private static final Duration LIKE_CACHE_TTL = Duration.ofMinutes(30);
+    private static final Duration ENGAGEMENT_CACHE_TTL = Duration.ofMinutes(15);
 
     /**
      * Set a key-value pair with TTL
@@ -114,141 +114,263 @@ public class RedisUtil {
         return redisTemplate.keys(pattern);
     }
 
-    // Novel-specific cache methods
+    // Comment-specific cache methods
 
     /**
-     * Cache novel data
+     * Cache comment data
      */
-    public void cacheNovel(Integer novelId, Object novelData) {
-        String key = NOVEL_PREFIX + novelId;
-        set(key, novelData, NOVEL_CACHE_TTL);
+    public void cacheComment(Integer commentId, Object commentData) {
+        String key = COMMENT_PREFIX + commentId;
+        set(key, commentData, COMMENT_CACHE_TTL);
     }
 
     /**
-     * Get cached novel data
+     * Get cached comment data
      */
-    public Object getCachedNovel(Integer novelId) {
-        String key = NOVEL_PREFIX + novelId;
+    public Object getCachedComment(Integer commentId) {
+        String key = COMMENT_PREFIX + commentId;
         return get(key);
     }
 
     /**
-     * Get cached novel data with type casting
+     * Get cached comment data with type casting
      */
-    public <T> T getCachedNovel(Integer novelId, Class<T> clazz) {
-        String key = NOVEL_PREFIX + novelId;
+    public <T> T getCachedComment(Integer commentId, Class<T> clazz) {
+        String key = COMMENT_PREFIX + commentId;
         return get(key, clazz);
     }
 
     /**
-     * Delete novel cache
+     * Cache comments for a chapter
      */
-    public void deleteNovelCache(Integer novelId) {
-        String key = NOVEL_PREFIX + novelId;
+    public void cacheChapterComments(Integer chapterId, Object commentsData) {
+        String key = COMMENT_PREFIX + "chapter:" + chapterId;
+        set(key, commentsData, COMMENT_CACHE_TTL);
+    }
+
+    /**
+     * Get cached comments for a chapter
+     */
+    public Object getCachedChapterComments(Integer chapterId) {
+        String key = COMMENT_PREFIX + "chapter:" + chapterId;
+        return get(key);
+    }
+
+    /**
+     * Delete comment cache
+     */
+    public void deleteCommentCache(Integer commentId) {
+        String key = COMMENT_PREFIX + commentId;
         delete(key);
     }
 
-    // View count cache methods
+    // Review-specific cache methods
 
     /**
-     * Cache view count for a novel
+     * Cache review data
      */
-    public void cacheViewCount(Integer novelId, Long viewCount) {
-        String key = VIEW_COUNT_PREFIX + novelId;
-        set(key, viewCount, VIEW_COUNT_CACHE_TTL);
+    public void cacheReview(Integer reviewId, Object reviewData) {
+        String key = REVIEW_PREFIX + reviewId;
+        set(key, reviewData, REVIEW_CACHE_TTL);
     }
 
     /**
-     * Get cached view count
+     * Get cached review data
      */
-    public Long getCachedViewCount(Integer novelId) {
-        String key = VIEW_COUNT_PREFIX + novelId;
+    public Object getCachedReview(Integer reviewId) {
+        String key = REVIEW_PREFIX + reviewId;
+        return get(key);
+    }
+
+    /**
+     * Get cached review data with type casting
+     */
+    public <T> T getCachedReview(Integer reviewId, Class<T> clazz) {
+        String key = REVIEW_PREFIX + reviewId;
+        return get(key, clazz);
+    }
+
+    /**
+     * Cache reviews for a novel
+     */
+    public void cacheNovelReviews(Integer novelId, Object reviewsData) {
+        String key = REVIEW_PREFIX + "novel:" + novelId;
+        set(key, reviewsData, REVIEW_CACHE_TTL);
+    }
+
+    /**
+     * Get cached reviews for a novel
+     */
+    public Object getCachedNovelReviews(Integer novelId) {
+        String key = REVIEW_PREFIX + "novel:" + novelId;
+        return get(key);
+    }
+
+    /**
+     * Delete review cache
+     */
+    public void deleteReviewCache(Integer reviewId) {
+        String key = REVIEW_PREFIX + reviewId;
+        delete(key);
+    }
+
+    // Vote-specific cache methods
+
+    /**
+     * Cache vote data
+     */
+    public void cacheVote(Integer voteId, Object voteData) {
+        String key = VOTE_PREFIX + voteId;
+        set(key, voteData, VOTE_CACHE_TTL);
+    }
+
+    /**
+     * Get cached vote data
+     */
+    public Object getCachedVote(Integer voteId) {
+        String key = VOTE_PREFIX + voteId;
+        return get(key);
+    }
+
+    /**
+     * Cache votes for a novel
+     */
+    public void cacheNovelVotes(Integer novelId, Object votesData) {
+        String key = VOTE_PREFIX + "novel:" + novelId;
+        set(key, votesData, VOTE_CACHE_TTL);
+    }
+
+    /**
+     * Get cached votes for a novel
+     */
+    public Object getCachedNovelVotes(Integer novelId) {
+        String key = VOTE_PREFIX + "novel:" + novelId;
+        return get(key);
+    }
+
+    /**
+     * Cache user votes
+     */
+    public void cacheUserVotes(String userId, Object votesData) {
+        String key = VOTE_PREFIX + "user:" + userId;
+        set(key, votesData, VOTE_CACHE_TTL);
+    }
+
+    /**
+     * Get cached user votes
+     */
+    public Object getCachedUserVotes(String userId) {
+        String key = VOTE_PREFIX + "user:" + userId;
+        return get(key);
+    }
+
+    // Like-specific cache methods
+
+    /**
+     * Cache like count for comments/reviews
+     */
+    public void cacheLikeCount(String entityType, Integer entityId, Long likeCount) {
+        String key = LIKE_PREFIX + entityType + ":" + entityId;
+        set(key, likeCount, LIKE_CACHE_TTL);
+    }
+
+    /**
+     * Get cached like count
+     */
+    public Long getCachedLikeCount(String entityType, Integer entityId) {
+        String key = LIKE_PREFIX + entityType + ":" + entityId;
         return get(key, Long.class);
     }
 
     /**
-     * Increment cached view count
+     * Increment cached like count
      */
-    public Long incrementCachedViewCount(Integer novelId) {
-        String key = VIEW_COUNT_PREFIX + novelId;
+    public Long incrementCachedLikeCount(String entityType, Integer entityId) {
+        String key = LIKE_PREFIX + entityType + ":" + entityId;
         Long newCount = increment(key);
-        expire(key, VIEW_COUNT_CACHE_TTL);
+        expire(key, LIKE_CACHE_TTL);
         return newCount;
     }
 
     /**
-     * Delete view count cache
+     * Decrement cached like count
      */
-    public void deleteViewCountCache(Integer novelId) {
-        String key = VIEW_COUNT_PREFIX + novelId;
-        delete(key);
+    public Long decrementCachedLikeCount(String entityType, Integer entityId) {
+        String key = LIKE_PREFIX + entityType + ":" + entityId;
+        Long newCount = increment(key, -1);
+        expire(key, LIKE_CACHE_TTL);
+        return newCount;
     }
 
-    // Popular queries cache methods
+    // Engagement statistics cache methods
 
     /**
-     * Cache popular novels list
+     * Cache engagement statistics
      */
-    public void cachePopularNovels(String category, Object novelsData) {
-        String key = POPULAR_PREFIX + "novels:" + category;
-        set(key, novelsData, POPULAR_CACHE_TTL);
-    }
-
-    /**
-     * Get cached popular novels
-     */
-    public Object getCachedPopularNovels(String category) {
-        String key = POPULAR_PREFIX + "novels:" + category;
-        return get(key);
+    public void cacheEngagementStats(String entityType, Integer entityId, Object statsData) {
+        String key = ENGAGEMENT_PREFIX + entityType + ":" + entityId;
+        set(key, statsData, ENGAGEMENT_CACHE_TTL);
     }
 
     /**
-     * Get cached popular novels with type casting
+     * Get cached engagement statistics
      */
-    public <T> T getCachedPopularNovels(String category, Class<T> clazz) {
-        String key = POPULAR_PREFIX + "novels:" + category;
-        return get(key, clazz);
-    }
-
-    /**
-     * Cache search results
-     */
-    public void cacheSearchResults(String searchQuery, Object searchResults) {
-        String key = SEARCH_PREFIX + "query:" + searchQuery.hashCode();
-        set(key, searchResults, SEARCH_CACHE_TTL);
-    }
-
-    /**
-     * Get cached search results
-     */
-    public Object getCachedSearchResults(String searchQuery) {
-        String key = SEARCH_PREFIX + "query:" + searchQuery.hashCode();
+    public Object getCachedEngagementStats(String entityType, Integer entityId) {
+        String key = ENGAGEMENT_PREFIX + entityType + ":" + entityId;
         return get(key);
     }
 
     // Cache invalidation methods
 
     /**
-     * Invalidate all novel-related caches
+     * Invalidate all comment-related caches
      */
-    public void invalidateNovelCaches(Integer novelId) {
-        deleteNovelCache(novelId);
-        deleteViewCountCache(novelId);
+    public void invalidateCommentCaches(Integer commentId) {
+        deleteCommentCache(commentId);
         
-        // Invalidate popular caches
-        Set<String> popularKeys = keys(POPULAR_PREFIX + "*");
-        if (!popularKeys.isEmpty()) {
-            delete(popularKeys);
+        // Invalidate chapter comment caches
+        Set<String> commentKeys = keys(COMMENT_PREFIX + "chapter:*");
+        if (!commentKeys.isEmpty()) {
+            delete(commentKeys);
         }
     }
 
     /**
-     * Invalidate all search caches
+     * Invalidate all review-related caches
      */
-    public void invalidateSearchCaches() {
-        Set<String> searchKeys = keys(SEARCH_PREFIX + "*");
-        if (!searchKeys.isEmpty()) {
-            delete(searchKeys);
+    public void invalidateReviewCaches(Integer reviewId) {
+        deleteReviewCache(reviewId);
+        
+        // Invalidate novel review caches
+        Set<String> reviewKeys = keys(REVIEW_PREFIX + "novel:*");
+        if (!reviewKeys.isEmpty()) {
+            delete(reviewKeys);
+        }
+    }
+
+    /**
+     * Invalidate all vote-related caches
+     */
+    public void invalidateVoteCaches(Integer novelId) {
+        Set<String> voteKeys = keys(VOTE_PREFIX + "novel:" + novelId);
+        if (!voteKeys.isEmpty()) {
+            delete(voteKeys);
+        }
+        
+        // Invalidate user vote caches
+        Set<String> userVoteKeys = keys(VOTE_PREFIX + "user:*");
+        if (!userVoteKeys.isEmpty()) {
+            delete(userVoteKeys);
+        }
+    }
+
+    /**
+     * Invalidate all engagement caches
+     */
+    public void invalidateEngagementCaches() {
+        Set<String> engagementKeys = keys(ENGAGEMENT_PREFIX + "*");
+        if (!engagementKeys.isEmpty()) {
+            delete(engagementKeys);
         }
     }
 
@@ -259,90 +381,6 @@ public class RedisUtil {
         Set<String> allKeys = keys("*");
         if (!allKeys.isEmpty()) {
             delete(allKeys);
-        }
-    }
-
-    // Category-specific cache methods
-
-    /**
-     * Cache category data
-     */
-    public void cacheCategory(Integer categoryId, Object categoryData) {
-        String key = CATEGORY_PREFIX + "id:" + categoryId;
-        set(key, categoryData, CATEGORY_CACHE_TTL);
-    }
-
-    /**
-     * Get cached category data
-     */
-    public Object getCachedCategory(Integer categoryId) {
-        String key = CATEGORY_PREFIX + "id:" + categoryId;
-        return get(key);
-    }
-
-    /**
-     * Get cached category data with type casting
-     */
-    public <T> T getCachedCategory(Integer categoryId, Class<T> clazz) {
-        String key = CATEGORY_PREFIX + "id:" + categoryId;
-        return get(key, clazz);
-    }
-
-    /**
-     * Cache category by slug
-     */
-    public void cacheCategoryBySlug(String slug, Object categoryData) {
-        String key = CATEGORY_PREFIX + "slug:" + slug;
-        set(key, categoryData, CATEGORY_CACHE_TTL);
-    }
-
-    /**
-     * Get cached category by slug
-     */
-    public Object getCachedCategoryBySlug(String slug) {
-        String key = CATEGORY_PREFIX + "slug:" + slug;
-        return get(key);
-    }
-
-    /**
-     * Get cached category by slug with type casting
-     */
-    public <T> T getCachedCategoryBySlug(String slug, Class<T> clazz) {
-        String key = CATEGORY_PREFIX + "slug:" + slug;
-        return get(key, clazz);
-    }
-
-    /**
-     * Cache categories list
-     */
-    public void cacheCategories(String type, Object categoriesData) {
-        String key = CATEGORY_PREFIX + type;
-        set(key, categoriesData, CATEGORY_CACHE_TTL);
-    }
-
-    /**
-     * Get cached categories list
-     */
-    public Object getCachedCategories(String type) {
-        String key = CATEGORY_PREFIX + type;
-        return get(key);
-    }
-
-    /**
-     * Get cached categories list with type casting
-     */
-    public <T> T getCachedCategories(String type, Class<T> clazz) {
-        String key = CATEGORY_PREFIX + type;
-        return get(key, clazz);
-    }
-
-    /**
-     * Invalidate all category-related caches
-     */
-    public void invalidateCategoryCaches() {
-        Set<String> categoryKeys = keys(CATEGORY_PREFIX + "*");
-        if (!categoryKeys.isEmpty()) {
-            delete(categoryKeys);
         }
     }
 }

@@ -32,7 +32,8 @@ public class CommentService {
     @Autowired
     private GamificationServiceClient gamificationServiceClient;
 
-    private static final Float COMMENT_EXP = 5f;
+    @Autowired
+    private KafkaEventProducerService kafkaEventProducerService;
 
     /**
      * Create a new comment
@@ -65,7 +66,7 @@ public class CommentService {
         commentMapper.insertSelective(comment);
 
         // Add EXP via gamification service
-        gamificationServiceClient.addExp(userId, COMMENT_EXP);
+        gamificationServiceClient.addExpForComment(userId);
 
         return toResponseDTO(comment, userId);
     }

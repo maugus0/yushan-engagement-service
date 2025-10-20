@@ -68,6 +68,10 @@ public class SecurityConfig {
                         // CORS preflight requests
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 
+                        // Vote APIs
+                        .requestMatchers(HttpMethod.POST, "/api/votes/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/votes/**").authenticated()
+
                         // Comment APIs
                         .requestMatchers(HttpMethod.GET, "/api/v1/comments/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/comments/**").authenticated()

@@ -34,7 +34,8 @@ public class ReviewService {
     @Autowired
     private GamificationServiceClient gamificationServiceClient;
 
-    private static final Float REVIEW_EXP = 5f;
+    @Autowired
+    private KafkaEventProducerService kafkaEventProducerService;
 
     /**
      * Create a new review
@@ -70,7 +71,8 @@ public class ReviewService {
         reviewMapper.insertSelective(review);
 
         // add exp
-        gamificationServiceClient.addExp(userId, REVIEW_EXP);
+        // Add EXP via gamification service
+        gamificationServiceClient.addExpForReview(userId);
 
         return toResponseDTO(review);
     }
@@ -275,8 +277,8 @@ public class ReviewService {
         dto.setUsername(userServiceClient.getUsernameById(review.getUserId()));
 
         // get novel title（by content service client）
-        NovelDetailResponseDTO novelDetail = contentServiceClient.getNovelById(review.getNovelId());
-        dto.setNovelTitle(novelDetail != null ? novelDetail.getTitle() : "Novel not found");
+        ApiResponse<NovelDetailResponseDTO> novelResponse = contentServiceClient.getNovelById(review.getNovelId());
+        dto.setNovelTitle(novelResponse != null && novelResponse.getData() != null ? novelResponse.getData().getTitle() : "Novel not found");
 
         return dto;
     }

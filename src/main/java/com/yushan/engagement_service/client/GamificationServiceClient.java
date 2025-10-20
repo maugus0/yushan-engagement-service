@@ -1,39 +1,38 @@
 package com.yushan.engagement_service.client;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
-@Component
-public class GamificationServiceClient {
+@FeignClient(name = "gamification-service", url = "${services.gamification.url:http://localhost:8085}")
+public interface GamificationServiceClient {
 
-    private final RestTemplate restTemplate;
+    @PostMapping("/api/exp/add")
+    void addExp(@RequestBody Map<String, Object> request);
 
-    @Value("${services.gamification.url:http://localhost:8085}")
-    private String gamificationServiceUrl;
-
-    public GamificationServiceClient(RestTemplate restTemplate) {
-        this.restTemplate = Objects.requireNonNull(restTemplate, "RestTemplate cannot be null");
-    }
-
-    public void addExp(UUID userId, Float exp) {
+    default void addExp(UUID userId, Float exp, String reason) {
         try {
-            String url = gamificationServiceUrl + "/api/exp/add";
-
-            Map<String, Object> request = new HashMap<>();
-            request.put("userId", userId.toString());
-            request.put("exp", exp);
-            request.put("reason", "COMMENT_CREATED");
-
-            restTemplate.postForObject(url, request, Void.class);
+            Map<String, Object> request = Map.of(
+                "userId", userId.toString(),
+                "exp", exp,
+                "reason", reason
+            );
+            addExp(request);
         } catch (Exception e) {
-            // Log error but don't fail the comment creation
+            // Log error but don't fail the main operation
             System.err.println("Failed to add EXP for user " + userId + ": " + e.getMessage());
         }
+    }
+
+    // Convenience methods for common actions
+    default void addExpForComment(UUID userId) {
+        addExp(userId, 5.0f, "COMMENT_CREATED");
+    }
+
+    default void addExpForReview(UUID userId) {
+        addExp(userId, 5.0f, "REVIEW_CREATED");
     }
 }

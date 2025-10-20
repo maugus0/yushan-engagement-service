@@ -2,6 +2,7 @@ package com.yushan.engagement_service.controller;
 
 import com.yushan.engagement_service.dto.comment.*;
 import com.yushan.engagement_service.dto.common.*;
+import com.yushan.engagement_service.enums.ErrorCode;
 import com.yushan.engagement_service.service.CommentService;
 import com.yushan.engagement_service.security.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -67,7 +68,7 @@ public class CommentController {
         if (deleted) {
             return ApiResponse.success("Comment deleted successfully");
         }
-        return ApiResponse.error(400, "Failed to delete comment");
+        return ApiResponse.error(ErrorCode.BAD_REQUEST, "Failed to delete comment");
     }
 
     /**
@@ -327,7 +328,7 @@ public class CommentController {
         if (deleted) {
             return ApiResponse.success("Comment deleted successfully by admin");
         }
-        return ApiResponse.error(400, "Failed to delete comment");
+        return ApiResponse.error(ErrorCode.BAD_REQUEST, "Failed to delete comment");
     }
 
     /**

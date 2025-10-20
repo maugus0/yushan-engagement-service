@@ -157,7 +157,7 @@
 
     <!-- Select comments with pagination and filtering -->
     <select id="selectCommentsWithPagination" resultMap="BaseResultMap"
-            parameterType="com.yushan.engagement_service.dto.CommentSearchRequestDTO">
+            parameterType="com.yushan.engagement_service.dto.comment.CommentSearchRequestDTO">
         select
         <include refid="Base_Column_List" />
         from comment
@@ -199,7 +199,7 @@
     <!-- ========================================= -->
 
     <select id="countComments" resultType="long"
-            parameterType="com.yushan.engagement_service.dto.CommentSearchRequestDTO">
+            parameterType="com.yushan.engagement_service.dto.comment.CommentSearchRequestDTO">
         select count(*)
         from comment
         <where>
