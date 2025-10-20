@@ -1,8 +1,8 @@
 package com.yushan.engagement_service.client;
 
-import com.yushan.engagement_service.dto.ApiResponse;
-import com.yushan.engagement_service.dto.ChapterDetailResponseDTO;
-import com.yushan.engagement_service.dto.NovelDetailResponseDTO;
+import com.yushan.engagement_service.dto.common.ApiResponse;
+import com.yushan.engagement_service.dto.chapter.ChapterDetailResponseDTO;
+import com.yushan.engagement_service.dto.novel.NovelDetailResponseDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;

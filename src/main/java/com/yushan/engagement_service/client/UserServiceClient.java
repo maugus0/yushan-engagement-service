@@ -1,6 +1,6 @@
 package com.yushan.engagement_service.client;
 
-import com.yushan.engagement_service.dto.UserDTO;
+import com.yushan.engagement_service.dto.user.UserResponseDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -21,10 +21,10 @@ public class UserServiceClient {
         this.restTemplate = Objects.requireNonNull(restTemplate, "RestTemplate cannot be null");
     }
 
-    public UserDTO getUser(UUID userId) {
+    public UserResponseDTO getUser(UUID userId) {
         try {
             String url = userServiceUrl + "/api/users/" + userId;
-            return restTemplate.getForObject(url, UserDTO.class);
+            return restTemplate.getForObject(url, UserResponseDTO.class);
         } catch (HttpClientErrorException.NotFound e) {
             return null;
         } catch (Exception e) {
@@ -34,7 +34,7 @@ public class UserServiceClient {
 
     public String getUsernameById(UUID userId) {
         try {
-            UserDTO user = getUser(userId);
+            UserResponseDTO user = getUser(userId);
             return user != null ? user.getUsername() : "Unknown User";
         } catch (Exception e) {
             return "Unknown User";

@@ -1,6 +1,7 @@
 package com.yushan.engagement_service.controller;
 
-import com.yushan.engagement_service.dto.*;
+import com.yushan.engagement_service.dto.review.*;
+import com.yushan.engagement_service.dto.common.*;
 import com.yushan.engagement_service.security.CustomUserDetails;
 import com.yushan.engagement_service.service.ReviewService;
 import jakarta.validation.Valid;

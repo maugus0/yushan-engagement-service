@@ -1,15 +1,15 @@
-package com.yushan.engagement_service.dto;
+package com.yushan.engagement_service.dto.novel;
 
 import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * DTO for novel information in engagement service.
+ * DTO for novel detail response in engagement service.
  * Contains basic novel information needed for engagement operations.
  */
 @Data
-public class NovelDTO {
+public class NovelDetailResponseDTO {
     // Primary identifiers
     private Integer id;
     private String title;

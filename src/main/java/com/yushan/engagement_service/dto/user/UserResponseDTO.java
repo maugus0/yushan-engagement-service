@@ -1,4 +1,4 @@
-package com.yushan.engagement_service.dto;
+package com.yushan.engagement_service.dto.user;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +11,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserDTO {
+public class UserResponseDTO {
     private UUID id;
     private String username;
     private String email;

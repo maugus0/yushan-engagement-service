@@ -1,9 +1,9 @@
 package com.yushan.engagement_service.service;
 
 import com.yushan.engagement_service.dao.VoteMapper;
-import com.yushan.engagement_service.dto.PageResponseDTO;
-import com.yushan.engagement_service.dto.VoteResponseDTO;
-import com.yushan.engagement_service.dto.VoteUserResponseDTO;
+import com.yushan.engagement_service.dto.common.PageResponseDTO;
+import com.yushan.engagement_service.dto.vote.VoteResponseDTO;
+import com.yushan.engagement_service.dto.vote.VoteUserResponseDTO;
 import com.yushan.engagement_service.entity.Vote;
 import com.yushan.engagement_service.client.ContentServiceClient;
 import com.yushan.engagement_service.exception.ValidationException;

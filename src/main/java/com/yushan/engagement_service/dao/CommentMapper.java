@@ -1,6 +1,6 @@
 package com.yushan.engagement_service.dao;
 
-import com.yushan.engagement_service.dto.CommentSearchRequestDTO;
+import com.yushan.engagement_service.dto.comment.CommentSearchRequestDTO;
 import com.yushan.engagement_service.entity.Comment;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

@@ -1,4 +1,4 @@
-package com.yushan.engagement_service.dto;
+package com.yushan.engagement_service.dto.common;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

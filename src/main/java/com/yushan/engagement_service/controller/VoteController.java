@@ -1,6 +1,7 @@
 package com.yushan.engagement_service.controller;
 
-import com.yushan.engagement_service.dto.*;
+import com.yushan.engagement_service.dto.vote.*;
+import com.yushan.engagement_service.dto.common.*;
 import com.yushan.engagement_service.exception.ValidationException;
 import com.yushan.engagement_service.security.CustomUserDetails;
 import com.yushan.engagement_service.service.VoteService;

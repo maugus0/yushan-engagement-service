@@ -1,4 +1,4 @@
-package com.yushan.engagement_service.dto;
+package com.yushan.engagement_service.dto.chapter;
 
 import lombok.Builder;
 import lombok.Data;

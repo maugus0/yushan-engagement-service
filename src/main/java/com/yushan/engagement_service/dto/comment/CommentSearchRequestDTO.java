@@ -1,4 +1,4 @@
-package com.yushan.engagement_service.dto;
+package com.yushan.engagement_service.dto.comment;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

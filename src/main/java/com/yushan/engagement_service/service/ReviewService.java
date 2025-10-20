@@ -1,7 +1,9 @@
 package com.yushan.engagement_service.service;
 
 import com.yushan.engagement_service.dao.ReviewMapper;
-import com.yushan.engagement_service.dto.*;
+import com.yushan.engagement_service.dto.review.*;
+import com.yushan.engagement_service.dto.common.*;
+import com.yushan.engagement_service.dto.novel.NovelDetailResponseDTO;
 import com.yushan.engagement_service.entity.Review;
 import com.yushan.engagement_service.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -273,7 +275,7 @@ public class ReviewService {
         dto.setUsername(userServiceClient.getUsernameById(review.getUserId()));
 
         // get novel title（by content service client）
-        var novelDetail = contentServiceClient.getNovelById(review.getNovelId());
+        NovelDetailResponseDTO novelDetail = contentServiceClient.getNovelById(review.getNovelId());
         dto.setNovelTitle(novelDetail != null ? novelDetail.getTitle() : "Novel not found");
 
         return dto;

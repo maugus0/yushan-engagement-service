@@ -1,6 +1,6 @@
 services:
   # PostgreSQL Database for Engagement Service
-  postgres:
+  engagement-postgres:
     image: postgres:16-alpine
     container_name: yushan-engagement-postgres
     restart: unless-stopped
@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me_in_production}
       POSTGRES_DB: ${DB_NAME:-yushan_engagement}
     ports:
-      - "5433:5432"  # External:Internal (avoiding conflict with user-service)
+      - "5433:5432"
     volumes:
       - engagement_pg_data:/var/lib/postgresql/data
     healthcheck:
@@ -46,7 +46,7 @@ services:
     container_name: yushan-engagement-service
     restart: unless-stopped
     depends_on:
-      postgres:
+      engagement-postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -57,7 +57,7 @@ services:
       DB_USERNAME: ${DB_USERNAME:-yushan_engagement}
       DB_PASSWORD: ${DB_PASSWORD:-change_me_in_production}
       DB_NAME: ${DB_NAME:-yushan_engagement}
-      DB_HOST: postgres
+      DB_HOST: engagement-postgres
       DB_PORT: 5432
 
       # Redis Configuration
