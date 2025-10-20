@@ -1,74 +1,197 @@
 package com.yushan.engagement_service.dto.chapter;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.Date;
+import java.util.UUID;
 
-@Data
-@Builder
-@NoArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ChapterDetailResponseDTO {
+    
     private Integer id;
+    private UUID uuid;
     private Integer novelId;
-    private String title;
     private Integer chapterNumber;
+    private String title;
+    private String content;
+    private String preview;
+    private Integer wordCnt;
+    private Boolean isPremium;
+    private Float yuanCost;
+    private Long viewCnt;
     private Boolean isValid;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updateTime;
+    
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date publishTime;
 
-    public ChapterDetailResponseDTO(Integer id, Integer novelId, String title, Integer chapterNumber, Boolean isValid, Date createTime, Date updateTime) {
+    private UUID nextChapterUuid;
+    private UUID previousChapterUuid;
+
+    // Constructors
+    public ChapterDetailResponseDTO() {}
+
+    public ChapterDetailResponseDTO(Integer id, UUID uuid, Integer novelId, Integer chapterNumber, String title,
+                                    String content, String preview, Integer wordCnt, Boolean isPremium, Float yuanCost,
+                                    Long viewCnt, Boolean isValid, Date createTime, Date updateTime,
+                                    Date publishTime) {
         this.id = id;
+        this.uuid = uuid;
         this.novelId = novelId;
-        this.title = title;
         this.chapterNumber = chapterNumber;
+        this.title = title;
+        this.content = content;
+        this.preview = preview;
+        this.wordCnt = wordCnt;
+        this.isPremium = isPremium;
+        this.yuanCost = yuanCost;
+        this.viewCnt = viewCnt;
         this.isValid = isValid;
-        this.createTime = createTime != null ? new Date(createTime.getTime()) : null;
-        this.updateTime = updateTime != null ? new Date(updateTime.getTime()) : null;
+        this.createTime = createTime != null ? (Date) createTime.clone() : null;
+        this.updateTime = updateTime != null ? (Date) updateTime.clone() : null;
+        this.publishTime = publishTime != null ? (Date) publishTime.clone() : null;
     }
 
-    public Date getCreateTime() {
-        return createTime != null ? new Date(createTime.getTime()) : null;
+    // Getters and Setters
+    public Integer getId() { 
+        return id; 
+    }
+    
+    public void setId(Integer id) { 
+        this.id = id; 
     }
 
-    public void setCreateTime(Date createTime) {
-        this.createTime = createTime != null ? new Date(createTime.getTime()) : null;
+    public UUID getUuid() { 
+        return uuid; 
+    }
+    
+    public void setUuid(UUID uuid) { 
+        this.uuid = uuid; 
     }
 
-    public Date getUpdateTime() {
-        return updateTime != null ? new Date(updateTime.getTime()) : null;
+    public Integer getNovelId() { 
+        return novelId; 
+    }
+    
+    public void setNovelId(Integer novelId) { 
+        this.novelId = novelId; 
     }
 
-    public void setUpdateTime(Date updateTime) {
-        this.updateTime = updateTime != null ? new Date(updateTime.getTime()) : null;
+    public Integer getChapterNumber() { 
+        return chapterNumber; 
+    }
+    
+    public void setChapterNumber(Integer chapterNumber) { 
+        this.chapterNumber = chapterNumber; 
     }
 
-    public static ChapterDetailResponseDTOBuilder builder() {
-        return new ChapterDetailResponseDTOBuilder();
+    public String getTitle() { 
+        return title; 
+    }
+    
+    public void setTitle(String title) { 
+        this.title = title; 
     }
 
-    public static class ChapterDetailResponseDTOBuilder {
-        private Integer id;
-        private Integer novelId;
-        private String title;
-        private Integer chapterNumber;
-        private Boolean isValid;
-        private Date createTime;
-        private Date updateTime;
+    public String getContent() { 
+        return content; 
+    }
+    
+    public void setContent(String content) { 
+        this.content = content; 
+    }
 
-        public ChapterDetailResponseDTOBuilder createTime(Date createTime) {
-            this.createTime = createTime != null ? new Date(createTime.getTime()) : null;
-            return this;
-        }
+    public String getPreview() { 
+        return preview; 
+    }
+    
+    public void setPreview(String preview) { 
+        this.preview = preview; 
+    }
 
-        public ChapterDetailResponseDTOBuilder updateTime(Date updateTime) {
-            this.updateTime = updateTime != null ? new Date(updateTime.getTime()) : null;
-            return this;
-        }
+    public Integer getWordCnt() { 
+        return wordCnt; 
+    }
+    
+    public void setWordCnt(Integer wordCnt) { 
+        this.wordCnt = wordCnt; 
+    }
 
-        public ChapterDetailResponseDTO build() {
-            return new ChapterDetailResponseDTO(id, novelId, title, chapterNumber, isValid, createTime, updateTime);
-        }
+    public Boolean getIsPremium() { 
+        return isPremium; 
+    }
+    
+    public void setIsPremium(Boolean isPremium) { 
+        this.isPremium = isPremium; 
+    }
+
+    public Float getYuanCost() { 
+        return yuanCost; 
+    }
+    
+    public void setYuanCost(Float yuanCost) { 
+        this.yuanCost = yuanCost; 
+    }
+
+    public Long getViewCnt() { 
+        return viewCnt; 
+    }
+    
+    public void setViewCnt(Long viewCnt) { 
+        this.viewCnt = viewCnt; 
+    }
+
+    public Boolean getIsValid() { 
+        return isValid; 
+    }
+    
+    public void setIsValid(Boolean isValid) { 
+        this.isValid = isValid; 
+    }
+
+    public Date getCreateTime() { 
+        return createTime != null ? (Date) createTime.clone() : null; 
+    }
+    
+    public void setCreateTime(Date createTime) { 
+        this.createTime = createTime != null ? (Date) createTime.clone() : null; 
+    }
+
+    public Date getUpdateTime() { 
+        return updateTime != null ? (Date) updateTime.clone() : null; 
+    }
+    
+    public void setUpdateTime(Date updateTime) { 
+        this.updateTime = updateTime != null ? (Date) updateTime.clone() : null; 
+    }
+
+    public Date getPublishTime() { 
+        return publishTime != null ? (Date) publishTime.clone() : null; 
+    }
+    
+    public void setPublishTime(Date publishTime) { 
+        this.publishTime = publishTime != null ? (Date) publishTime.clone() : null; 
+    }
+
+    public UUID getNextChapterUuid() { 
+        return nextChapterUuid; 
+    }
+    
+    public void setNextChapterUuid(UUID nextChapterUuid) { 
+        this.nextChapterUuid = nextChapterUuid; 
+    }
+
+    public UUID getPreviousChapterUuid() { 
+        return previousChapterUuid; 
+    }
+    
+    public void setPreviousChapterUuid(UUID previousChapterUuid) { 
+        this.previousChapterUuid = previousChapterUuid; 
     }
 }

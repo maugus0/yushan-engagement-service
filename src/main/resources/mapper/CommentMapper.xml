@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
-<mapper namespace="com.yushan.engagement_service.dao.CommentMapper">
+<mapper namespace="com.yushan.engagement_service.dao.CommentMapper" >
     <resultMap id="BaseResultMap" type="com.yushan.engagement_service.entity.Comment" >
         <constructor >
             <idArg column="id" jdbcType="INTEGER" javaType="java.lang.Integer" />
@@ -13,39 +13,34 @@
             <arg column="update_time" jdbcType="TIMESTAMP" javaType="java.util.Date" />
         </constructor>
     </resultMap>
-
     <sql id="Base_Column_List" >
         id, user_id, chapter_id, content, like_cnt, is_spoiler, create_time, update_time
     </sql>
-
-    <!-- ========================================= -->
     <!-- Basic CRUD Operations -->
-    <!-- ========================================= -->
-
     <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
         select
         <include refid="Base_Column_List" />
         from comment
         where id = #{id,jdbcType=INTEGER}
     </select>
-
     <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
         delete from comment
         where id = #{id,jdbcType=INTEGER}
     </delete>
-
-    <insert id="insert" parameterType="com.yushan.engagement_service.entity.Comment"
-            useGeneratedKeys="true" keyProperty="id">
-        insert into comment (user_id, chapter_id, content, like_cnt, is_spoiler, create_time, update_time)
-        values (#{userId,jdbcType=OTHER}, #{chapterId,jdbcType=INTEGER},
+    <insert id="insert" parameterType="com.yushan.engagement_service.entity.Comment" >
+        insert into comment (id, user_id, chapter_id,
+        content, like_cnt, is_spoiler,
+        create_time, update_time)
+        values (#{id,jdbcType=INTEGER}, #{userId,jdbcType=OTHER}, #{chapterId,jdbcType=INTEGER},
         #{content,jdbcType=VARCHAR}, #{likeCnt,jdbcType=INTEGER}, #{isSpoiler,jdbcType=BIT},
         #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP})
     </insert>
-
-    <insert id="insertSelective" parameterType="com.yushan.engagement_service.entity.Comment"
-            useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertSelective" parameterType="com.yushan.engagement_service.entity.Comment" >
         insert into comment
         <trim prefix="(" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                id,
+            </if>
             <if test="userId != null" >
                 user_id,
             </if>
@@ -69,6 +64,9 @@
             </if>
         </trim>
         <trim prefix="values (" suffix=")" suffixOverrides="," >
+            <if test="id != null" >
+                #{id,jdbcType=INTEGER},
+            </if>
             <if test="userId != null" >
                 #{userId,jdbcType=OTHER},
             </if>
@@ -92,7 +90,6 @@
             </if>
         </trim>
     </insert>
-
     <update id="updateByPrimaryKeySelective" parameterType="com.yushan.engagement_service.entity.Comment" >
         update comment
         <set >
@@ -120,7 +117,6 @@
         </set>
         where id = #{id,jdbcType=INTEGER}
     </update>
-
     <update id="updateByPrimaryKey" parameterType="com.yushan.engagement_service.entity.Comment" >
         update comment
         set user_id = #{userId,jdbcType=OTHER},
@@ -132,11 +128,7 @@
         update_time = #{updateTime,jdbcType=TIMESTAMP}
         where id = #{id,jdbcType=INTEGER}
     </update>
-
-    <!-- ========================================= -->
     <!-- Custom Select Queries -->
-    <!-- ========================================= -->
-
     <!-- Select comments by chapter ID with ordering -->
     <select id="selectByChapterId" resultMap="BaseResultMap" parameterType="java.lang.Integer">
         select
@@ -145,7 +137,6 @@
         where chapter_id = #{chapterId,jdbcType=INTEGER}
         order by create_time desc
     </select>
-
     <!-- Select comments by user ID -->
     <select id="selectByUserId" resultMap="BaseResultMap" parameterType="java.util.UUID">
         select
@@ -154,10 +145,19 @@
         where user_id = #{userId,jdbcType=OTHER}
         order by create_time desc
     </select>
-
+    <!-- Select comments by novel ID (through chapter join) -->
+    <select id="selectByNovelId" resultMap="BaseResultMap" parameterType="java.util.List">
+        select
+        c.id, c.user_id, c.chapter_id, c.content, c.like_cnt, c.is_spoiler, c.create_time, c.update_time
+        from comment c
+        where c.chapter_id in
+        <foreach item="chapterId" collection="list" open="(" separator="," close=")">
+            #{chapterId}
+        </foreach>
+        order by c.create_time desc
+    </select>
     <!-- Select comments with pagination and filtering -->
-    <select id="selectCommentsWithPagination" resultMap="BaseResultMap"
-            parameterType="com.yushan.engagement_service.dto.comment.CommentSearchRequestDTO">
+    <select id="selectCommentsWithPagination" resultMap="BaseResultMap" parameterType="com.yushan.engagement_service.dto.comment.CommentSearchRequestDTO">
         select
         <include refid="Base_Column_List" />
         from comment
@@ -177,29 +177,49 @@
         </where>
         <choose>
             <when test="sort != null and sort == 'likeCnt'">
-                order by like_cnt
+                order by like_cnt ${order}
+            </when>
+            <otherwise>
+                order by create_time ${order}
+            </otherwise>
+        </choose>
+        limit #{size} offset #{page} * #{size}
+    </select>
+    <!-- Select comments by novel with pagination -->
+    <select id="selectCommentsByNovelWithPagination" resultMap="BaseResultMap">
+        select
+        c.id, c.user_id, c.chapter_id, c.content, c.like_cnt, c.is_spoiler, c.create_time, c.update_time
+        from comment c
+        where c.chapter_id in
+        <foreach item="chapterId" collection="chapterIds" open="(" separator="," close=")">
+            #{chapterId}
+        </foreach>
+        <if test="isSpoiler != null">
+            and c.is_spoiler = #{isSpoiler,jdbcType=BIT}
+        </if>
+        <if test="search != null and search != ''">
+            and c.content like concat('%', #{search}, '%')
+        </if>
+        <choose>
+            <when test="sort != null and sort == 'likeCnt'">
+                order by c.like_cnt
                 <choose>
-                    <when test="order != null and order.equalsIgnoreCase('asc')">ASC</when>
+                    <when test="order == 'ASC'">ASC</when>
                     <otherwise>DESC</otherwise>
                 </choose>
             </when>
             <otherwise>
-                order by create_time
+                order by c.create_time
                 <choose>
-                    <when test="order != null and order.equalsIgnoreCase('asc')">ASC</when>
+                    <when test="order == 'ASC'">ASC</when>
                     <otherwise>DESC</otherwise>
                 </choose>
             </otherwise>
         </choose>
         limit #{size} offset (#{page} * #{size})
     </select>
-
-    <!-- ========================================= -->
     <!-- Count Queries -->
-    <!-- ========================================= -->
-
-    <select id="countComments" resultType="long"
-            parameterType="com.yushan.engagement_service.dto.comment.CommentSearchRequestDTO">
+    <select id="countComments" resultType="long" parameterType="com.yushan.engagement_service.dto.comment.CommentSearchRequestDTO">
         select count(*)
         from comment
         <where>
@@ -217,91 +237,75 @@
             </if>
         </where>
     </select>
-
     <select id="countByChapterId" resultType="long" parameterType="java.lang.Integer">
         select count(*)
         from comment
         where chapter_id = #{chapterId,jdbcType=INTEGER}
     </select>
-
-    <!-- Count comments in last N days -->
-    <select id="countCommentsInLastDays" resultType="long" parameterType="int">
-        SELECT COUNT(*)
-        FROM comment
-        WHERE create_time >= CURRENT_TIMESTAMP - INTERVAL '1 day' * #{days}
+    <select id="countByNovelId" resultType="long" parameterType="java.util.List">
+        select count(*)
+        from comment c
+        where c.chapter_id in
+        <foreach item="chapterId" collection="list" open="(" separator="," close=")">
+            #{chapterId}
+        </foreach>
     </select>
-
-    <!-- Count comments by user -->
-    <select id="countCommentsByUser" resultType="long" parameterType="java.util.UUID">
-        SELECT COUNT(*)
-        FROM comment
-        WHERE user_id = #{userId,jdbcType=OTHER}
+    <select id="countCommentsByNovel" resultType="long">
+        select count(*)
+        from comment c
+        where c.chapter_id in
+        <foreach item="chapterId" collection="chapterIds" open="(" separator="," close=")">
+            #{chapterId}
+        </foreach>
+        <if test="isSpoiler != null">
+            and c.is_spoiler = #{isSpoiler,jdbcType=BIT}
+        </if>
+        <if test="search != null and search != ''">
+            and c.content like concat('%', #{search}, '%')
+        </if>
     </select>
-
-    <!-- ========================================= -->
-    <!-- Update Operations -->
-    <!-- ========================================= -->
-
     <!-- Update like count (increment or decrement) -->
     <update id="updateLikeCount">
         update comment
-        set like_cnt = like_cnt + #{increment,jdbcType=INTEGER},
-        update_time = CURRENT_TIMESTAMP
+        set like_cnt = like_cnt + #{increment,jdbcType=INTEGER}
         where id = #{id,jdbcType=INTEGER}
     </update>
-
-    <!-- Batch update spoiler status -->
-    <update id="batchUpdateSpoilerStatus">
-        UPDATE comment
-        SET is_spoiler = #{isSpoiler,jdbcType=BIT},
-        update_time = CURRENT_TIMESTAMP
-        WHERE id IN
-        <foreach collection="ids" item="id" open="(" separator="," close=")">
-            #{id,jdbcType=INTEGER}
-        </foreach>
-    </update>
-
-    <!-- ========================================= -->
-    <!-- Check/Exists Queries -->
-    <!-- ========================================= -->
-
     <!-- Check if user has already commented on a chapter -->
     <select id="existsByUserAndChapter" resultType="boolean">
         select count(*) > 0
         from comment
-        where user_id = #{userId,jdbcType=OTHER}
-        and chapter_id = #{chapterId,jdbcType=INTEGER}
+        where user_id = #{userId,jdbcType=OTHER} and chapter_id = #{chapterId,jdbcType=INTEGER}
+    </select>
+    <!-- Adding these queries as part of task YW-209 -->
+    <!-- Count comments in last N days -->
+    <select id="countCommentsInLastDays" resultType="long">
+        SELECT COUNT(*)
+        FROM comment
+        WHERE create_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
     </select>
 
-    <!-- ========================================= -->
-    <!-- Admin/Moderation Queries -->
-    <!-- ========================================= -->
+    <!-- Count comments by user -->
+    <select id="countCommentsByUser" resultType="long">
+        SELECT COUNT(*)
+        FROM comment
+        WHERE user_id = #{userId}
+    </select>
 
     <!-- Get most active user -->
-    <select id="selectMostActiveUser" resultMap="BaseResultMap">
-        SELECT <include refid="Base_Column_List" />
-        FROM comment
-        WHERE user_id = (
-        SELECT user_id
-        FROM comment
-        GROUP BY user_id
+    <select id="selectMostActiveUser" resultType="com.yushan.engagement_service.entity.Comment">
+        SELECT c.*
+        FROM comment c
+        GROUP BY c.user_id
         ORDER BY COUNT(*) DESC
-        LIMIT 1
-        )
         LIMIT 1
     </select>
 
     <!-- Get most commented chapter -->
-    <select id="selectMostCommentedChapter" resultMap="BaseResultMap">
-        SELECT <include refid="Base_Column_List" />
-        FROM comment
-        WHERE chapter_id = (
-        SELECT chapter_id
-        FROM comment
-        GROUP BY chapter_id
+    <select id="selectMostCommentedChapter" resultType="com.yushan.engagement_service.entity.Comment">
+        SELECT c.*
+        FROM comment c
+        GROUP BY c.chapter_id
         ORDER BY COUNT(*) DESC
-        LIMIT 1
-        )
         LIMIT 1
     </select>
 
@@ -310,34 +314,45 @@
         DELETE FROM comment
         WHERE id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">
-            #{id,jdbcType=INTEGER}
+            #{id}
         </foreach>
     </delete>
 
+    <!-- Batch update spoiler status -->
+    <update id="batchUpdateSpoilerStatus">
+        UPDATE comment
+        SET is_spoiler = #{isSpoiler},
+        update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
     <!-- Get comments by keyword (content moderation) -->
-    <select id="selectCommentsByKeyword" resultMap="BaseResultMap">
-        SELECT <include refid="Base_Column_List" />
+    <select id="selectCommentsByKeyword" resultType="com.yushan.engagement_service.entity.Comment">
+        SELECT *
         FROM comment
-        WHERE content LIKE CONCAT('%', #{keyword,jdbcType=VARCHAR}, '%')
+        WHERE content LIKE CONCAT('%', #{keyword}, '%')
         ORDER BY create_time DESC
-        LIMIT #{limit,jdbcType=INTEGER}
+        LIMIT #{limit}
     </select>
 
     <!-- Get popular comments -->
-    <select id="selectPopularComments" resultMap="BaseResultMap">
-        SELECT <include refid="Base_Column_List" />
+    <select id="selectPopularComments" resultType="com.yushan.engagement_service.entity.Comment">
+        SELECT *
         FROM comment
-        WHERE like_cnt >= #{minLikes,jdbcType=INTEGER}
+        WHERE like_cnt >= #{minLikes}
         ORDER BY like_cnt DESC, create_time DESC
-        LIMIT #{limit,jdbcType=INTEGER}
+        LIMIT #{limit}
     </select>
 
     <!-- Get recent comments for moderation queue -->
-    <select id="selectRecentComments" resultMap="BaseResultMap">
-        SELECT <include refid="Base_Column_List" />
+    <select id="selectRecentComments" resultType="com.yushan.engagement_service.entity.Comment">
+        SELECT *
         FROM comment
-        WHERE create_time >= CURRENT_TIMESTAMP - INTERVAL '1 hour' * #{hours}
+        WHERE create_time >= DATE_SUB(NOW(), INTERVAL #{hours} HOUR)
         ORDER BY create_time DESC
-        LIMIT #{limit,jdbcType=INTEGER}
+        LIMIT #{limit}
     </select>
 </mapper>

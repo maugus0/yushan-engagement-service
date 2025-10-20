@@ -5,15 +5,18 @@ import com.yushan.engagement_service.dto.common.PageResponseDTO;
 import com.yushan.engagement_service.dto.common.ApiResponse;
 import com.yushan.engagement_service.dto.vote.VoteResponseDTO;
 import com.yushan.engagement_service.dto.vote.VoteUserResponseDTO;
-import com.yushan.engagement_service.dto.novel.NovelDetailResponseDTO;
 import com.yushan.engagement_service.entity.Vote;
 import com.yushan.engagement_service.client.ContentServiceClient;
+import com.yushan.engagement_service.client.UserServiceClient;
+import com.yushan.engagement_service.dto.novel.NovelDetailResponseDTO;
+import com.yushan.engagement_service.dto.user.UserResponseDTO;
 import com.yushan.engagement_service.exception.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
@@ -28,70 +31,116 @@ public class VoteService {
     private ContentServiceClient contentServiceClient;
 
     @Autowired
+    private UserServiceClient userServiceClient;
+
+    @Autowired
     private KafkaEventProducerService kafkaEventProducerService;
 
     /**
-     * Toggle vote for a novel (vote if not voted, unvote if already voted)
+     * Create vote for a novel
      */
     @Transactional
-    public VoteResponseDTO toggleVote(Integer novelId, UUID userId) {
-        // Check novel exists via content service
-        if (!contentServiceClient.novelExists(novelId)) {
+    public VoteResponseDTO createVote(Integer novelId, UUID userId) {
+        // Validate novel exists and get authorId via content service
+        ApiResponse<NovelDetailResponseDTO> novelResp = contentServiceClient.getNovelById(novelId);
+        if (novelResp == null || novelResp.getData() == null) {
             throw new ValidationException("Novel does not exist: " + novelId);
         }
+        NovelDetailResponseDTO novel = novelResp.getData();
 
-        // Check if user already voted for this novel
-        Vote existingVote = voteMapper.selectByUserAndNovel(userId, novelId);
-        
-        if (existingVote != null) {
-            // User already voted, so unvote (delete the vote)
-            voteMapper.deleteByPrimaryKey(existingVote.getId());
-            
-            // Get updated vote count
-            long voteCount = voteMapper.countByUserId(userId);
-            return new VoteResponseDTO(novelId, (int)voteCount, false); // false = unvoted
-        } else {
-            // User hasn't voted, so vote (create new vote)
-            Vote vote = new Vote();
-            vote.setUserId(userId);
-            vote.setNovelId(novelId);
-            Date now = new Date();
-            vote.setCreateTime(now);
-            vote.setUpdateTime(now);
-
-            voteMapper.insertSelective(vote);
-
-            // Get updated vote count
-            long voteCount = voteMapper.countByUserId(userId);
-            return new VoteResponseDTO(novelId, (int)voteCount, true); // true = voted
+        // Author cannot vote own novel
+        if (novel.getAuthorId() != null && novel.getAuthorId().equals(userId)) {
+            throw new ValidationException("Cannot vote your own novel");
         }
+        // Load user and check yuan >= 1
+        // TODO: userServiceClient
+        // UserResponseDTO user = userServiceClient.getUser(userId);
+        // if (user == null) {
+        //     throw new ValidationException("User not found");
+        // }
+        // NOTE: engagement UserResponseDTO lacks yuan; if needed, extend DTO to include yuan
+        // TODO
+        // if (user.getYuan() < 1) {
+        //     throw new ValidationException("Not enough yuan");
+        // }
+
+        // Create vote (no toggle per backend logic; always create and charge 1 yuan)
+        Vote vote = new Vote();
+        vote.setUserId(userId);
+        vote.setNovelId(novelId);
+        Date now = new Date();
+        vote.setCreateTime(now);
+        vote.setUpdateTime(now);
+        voteMapper.insertSelective(vote);
+
+        // // update yuan: TODO: userServiceClient
+        // user.setYuan(user.getYuan() - 1);
+        // userMapper.updateByPrimaryKeySelective(user);
+
+        // Update novel vote count
+        contentServiceClient.incrementVoteCount(novelId);
+        // Get updated vote count
+        ApiResponse<Integer> voteCountResponse = contentServiceClient.getNovelVoteCount(novelId);
+        Integer updatedVoteCount = voteCountResponse != null && voteCountResponse.getData() != null 
+            ? voteCountResponse.getData() : 0;
+
+        // // add exp
+        // TODO: Kafka need to push a event here to gamification
+        // {
+        //     "eventType": "USER_VOTE",
+        //     "userId": "c3d4e5f6-a7b8-9012-3456-7890abcdef12",
+        //     "entityId": null,
+        //     "timestamp": "2025-10-21T12:05:30.456+08:00"
+        //   }
+
+        return new VoteResponseDTO(novelId, updatedVoteCount, true);
     }
 
     public PageResponseDTO<VoteUserResponseDTO> getUserVotes(UUID userId, int page, int size) {
         int offset = page * size;
         long totalElements = voteMapper.countByUserId(userId);
 
-        List<Vote> votes = voteMapper.selectByUserIdWithPagination(userId, offset, size);
-
-        List<VoteUserResponseDTO> dtos = new ArrayList<>();
-        for (Vote vote : votes) {
-            VoteUserResponseDTO dto = new VoteUserResponseDTO();
-            dto.setId(vote.getId());
-            dto.setNovelId(vote.getNovelId());
-            
-            // Fetch novel title from ContentService
-            try {
-                ApiResponse<NovelDetailResponseDTO> novelResponse = contentServiceClient.getNovelById(vote.getNovelId());
-                dto.setNovelTitle(novelResponse != null && novelResponse.getData() != null ? novelResponse.getData().getTitle() : "Unknown Novel");
-            } catch (Exception e) {
-                dto.setNovelTitle("Unknown Novel");
-            }
-            
-            dto.setVotedTime(convertToLocalDateTime(vote.getCreateTime()));
-            dtos.add(dto);
+        if (totalElements == 0) {
+            return new PageResponseDTO<>(Collections.emptyList(), 0L, page, size);
         }
 
+        List<Vote> votes = voteMapper.selectByUserIdWithPagination(userId, offset, size);
+        if (votes.isEmpty()) {
+            return new PageResponseDTO<>(Collections.emptyList(), totalElements, page, size);
+        }
+
+        List<Integer> novelIds = votes.stream()
+                .map(Vote::getNovelId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // Get novels from content service
+        ApiResponse<List<NovelDetailResponseDTO>> novelResponse = contentServiceClient.getNovelsBatch(novelIds);
+        final Map<Integer, NovelDetailResponseDTO> novelMap;
+        if (novelResponse != null && novelResponse.getData() != null) {
+            novelMap = novelResponse.getData().stream()
+                    .collect(Collectors.toMap(NovelDetailResponseDTO::getId, novel -> novel));
+        } else {
+            novelMap = new HashMap<>();
+        }
+
+        List<VoteUserResponseDTO> dtos = votes.stream()
+                .map(vote -> {
+                    NovelDetailResponseDTO novel = novelMap.get(vote.getNovelId());
+                    return convertToDTO(vote, novel);
+                })
+                .collect(Collectors.toList());
         return new PageResponseDTO<>(dtos, totalElements, page, size);
+    }
+
+    private VoteUserResponseDTO convertToDTO(Vote vote, NovelDetailResponseDTO novel) {
+        VoteUserResponseDTO dto = new VoteUserResponseDTO();
+        dto.setId(vote.getId());
+        dto.setNovelId(vote.getNovelId());
+        dto.setNovelTitle(novel != null ? novel.getTitle() : "Novel not found");
+        dto.setVotedTime(convertToLocalDateTime(vote.getCreateTime()));
+
+        return dto;
     }
 
     private LocalDateTime convertToLocalDateTime(Date date) {

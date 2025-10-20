@@ -23,12 +23,12 @@
     delete from vote
     where id = #{id,jdbcType=INTEGER}
   </delete>
-  <insert id="insert" parameterType="com.yushan.engagement_service.entity.Vote" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="com.yushan.engagement_service.entity.Vote">
     insert into vote (id, user_id, novel_id, create_time, update_time)
     values (#{id,jdbcType=INTEGER}, #{userId,jdbcType=OTHER}, #{novelId,jdbcType=INTEGER}, 
             NOW(), NOW())
   </insert>
-  <insert id="insertSelective" parameterType="com.yushan.engagement_service.entity.Vote" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insertSelective" parameterType="com.yushan.engagement_service.entity.Vote">
     insert into vote
     <trim prefix="(" suffix=")" suffixOverrides="," >
       <if test="id != null" >

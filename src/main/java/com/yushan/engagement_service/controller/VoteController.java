@@ -24,17 +24,17 @@ public class VoteController {
     private VoteService voteService;
 
     /**
-     * Toggle a vote for a novel
+     * Create a vote for a novel
      */
     @PostMapping("/novels/{novelId}")
     @PreAuthorize("isAuthenticated()")
-    @Operation(summary = "[USER] Toggle vote", description = "Vote or unvote a novel. One active vote per user.")
-    public ApiResponse<VoteResponseDTO> toggleVote(@PathVariable Integer novelId,
+    @Operation(summary = "[USER] Create vote", description = "Vote a novel. A user can vote multiple times for the same novel.")
+    public ApiResponse<VoteResponseDTO> createVote(@PathVariable Integer novelId,
                                                    Authentication authentication) {
         UUID userId = getUserIdFromAuthentication(authentication);
-        VoteResponseDTO response = voteService.toggleVote(novelId, userId);
+        VoteResponseDTO response = voteService.createVote(novelId, userId);
 
-        return ApiResponse.success("Vote toggled successfully", response);
+        return ApiResponse.success("Vote created successfully", response);
     }
 
     /**
