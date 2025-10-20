@@ -28,12 +28,9 @@
     values (#{id,jdbcType=INTEGER}, #{userId,jdbcType=OTHER}, #{novelId,jdbcType=INTEGER}, 
             NOW(), NOW())
   </insert>
-  <insert id="insertSelective" parameterType="com.yushan.engagement_service.entity.Vote">
+  <insert id="insertSelective" parameterType="com.yushan.engagement_service.entity.Vote" useGeneratedKeys="true" keyProperty="id">
     insert into vote
     <trim prefix="(" suffix=")" suffixOverrides="," >
-      <if test="id != null" >
-        id,
-      </if>
       <if test="userId != null" >
         user_id,
       </if>
@@ -44,9 +41,6 @@
         update_time,
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides="," >
-      <if test="id != null" >
-        #{id,jdbcType=INTEGER},
-      </if>
       <if test="userId != null" >
         #{userId,jdbcType=OTHER},
       </if>

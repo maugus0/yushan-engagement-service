@@ -84,14 +84,12 @@ public class VoteService {
         Integer updatedVoteCount = voteCountResponse != null && voteCountResponse.getData() != null 
             ? voteCountResponse.getData() : 0;
 
-        // // add exp
-        // TODO: Kafka need to push a event here to gamification
-        // {
-        //     "eventType": "USER_VOTE",
-        //     "userId": "c3d4e5f6-a7b8-9012-3456-7890abcdef12",
-        //     "entityId": null,
-        //     "timestamp": "2025-10-21T12:05:30.456+08:00"
-        //   }
+        // Publish Kafka event for gamification
+        kafkaEventProducerService.publishVoteCreatedEvent(
+                vote.getId(),
+                userId,
+                novelId
+        );
 
         return new VoteResponseDTO(novelId, updatedVoteCount, true);
     }

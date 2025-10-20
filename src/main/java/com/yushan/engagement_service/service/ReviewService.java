@@ -70,13 +70,17 @@ public class ReviewService {
         // Update novel rating and review count
         updateNovelRatingAndCount(request.getNovelId());
 
-        // TODO: Kafka need to push a event here to gamification
-        // {
-        //     "eventType": "USER_REVIEW",
-        //     "userId": "b2c3d4e5-f6a7-8901-2345-67890abcdef1",
-        //     "entityId": 202,
-        //     "timestamp": "2025-10-21T11:45:10.123+08:00"
-        //   }
+        // Publish Kafka event for gamification
+        kafkaEventProducerService.publishReviewCreatedEvent(
+                review.getId(),
+                review.getUuid(),
+                userId,
+                request.getNovelId(),
+                request.getRating(),
+                request.getTitle(),
+                request.getContent(),
+                request.getIsSpoiler()
+        );
 
         return toResponseDTO(review);
     }

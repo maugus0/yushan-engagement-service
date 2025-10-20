@@ -44,4 +44,29 @@ public class NovelDetailResponseDTO {
     private Date createTime;
     private Date updateTime;
     private Date publishTime;
+
+    // Defensive copy methods to prevent internal representation exposure
+    public Date getCreateTime() {
+        return createTime != null ? new Date(createTime.getTime()) : null;
+    }
+
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime != null ? new Date(createTime.getTime()) : null;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime != null ? new Date(updateTime.getTime()) : null;
+    }
+
+    public void setUpdateTime(Date updateTime) {
+        this.updateTime = updateTime != null ? new Date(updateTime.getTime()) : null;
+    }
+
+    public Date getPublishTime() {
+        return publishTime != null ? new Date(publishTime.getTime()) : null;
+    }
+
+    public void setPublishTime(Date publishTime) {
+        this.publishTime = publishTime != null ? new Date(publishTime.getTime()) : null;
+    }
 }

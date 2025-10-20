@@ -62,13 +62,15 @@ public class CommentService {
 
         commentMapper.insertSelective(comment);
 
-        // TODO: Kafka need to push a event here to gamification
-        // {
-        //     "eventType": "USER_COMMENT",
-        //     "userId": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
-        //     "entityId": 101,
-        //     "timestamp": "2025-10-21T10:30:00.000+08:00"
-        //   }
+        // Publish Kafka event for gamification
+        kafkaEventProducerService.publishCommentCreatedEvent(
+                comment.getId(),
+                userId,
+                request.getChapterId(),
+                null, // novelId - would need to get from chapter service
+                request.getContent(),
+                request.getIsSpoiler()
+        );
 
         return toResponseDTO(comment, userId);
     }

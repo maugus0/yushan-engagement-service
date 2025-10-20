@@ -40,12 +40,9 @@
       #{content,jdbcType=VARCHAR}, #{likeCnt,jdbcType=INTEGER}, #{isSpoiler,jdbcType=BIT}, 
       #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP})
   </insert>
-  <insert id="insertSelective" parameterType="com.yushan.engagement_service.entity.Review" >
+  <insert id="insertSelective" parameterType="com.yushan.engagement_service.entity.Review" useGeneratedKeys="true" keyProperty="id">
     insert into review
     <trim prefix="(" suffix=")" suffixOverrides="," >
-      <if test="id != null" >
-        id,
-      </if>
       <if test="uuid != null" >
         uuid,
       </if>
@@ -78,9 +75,6 @@
       </if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides="," >
-      <if test="id != null" >
-        #{id,jdbcType=INTEGER},
-      </if>
       <if test="uuid != null" >
         #{uuid,jdbcType=OTHER},
       </if>

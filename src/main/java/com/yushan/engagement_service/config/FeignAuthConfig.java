@@ -21,9 +21,6 @@ public class FeignAuthConfig {
             }
 
             HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
-            if (request == null) {
-                return;
-            }
 
             String authorization = request.getHeader("Authorization");
             if (authorization != null && !authorization.isBlank()) {

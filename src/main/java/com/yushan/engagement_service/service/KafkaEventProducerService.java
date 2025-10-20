@@ -1,5 +1,8 @@
 package com.yushan.engagement_service.service;
 
+import com.yushan.engagement_service.dto.event.CommentCreatedEvent;
+import com.yushan.engagement_service.dto.event.ReviewCreatedEvent;
+import com.yushan.engagement_service.dto.event.VoteCreatedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -7,6 +10,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -37,8 +42,6 @@ public class KafkaEventProducerService {
     @Value("${spring.application.name:engagement-service}")
     private String serviceName;
 
-    private static final String EVENT_VERSION = "1.0";
-
     /**
      * Generic method to publish events to Kafka
      */
@@ -56,38 +59,70 @@ public class KafkaEventProducerService {
     }
 
     /**
-     * Publish comment event (placeholder for future implementation)
+     * Publish comment created event
      */
-    public void publishCommentEvent(String eventType, String commentId, Object eventData) {
+    public void publishCommentCreatedEvent(Integer commentId, UUID userId, Integer chapterId, 
+                                         Integer novelId, String content, Boolean isSpoiler) {
         try {
-            publishEvent(commentEventsTopic, commentId, eventData);
-            log.info("Published {} event for comment ID: {}", eventType, commentId);
+            CommentCreatedEvent event = CommentCreatedEvent.builder()
+                    .commentId(commentId)
+                    .userId(userId)
+                    .chapterId(chapterId)
+                    .novelId(novelId)
+                    .contentLength(content != null ? content.length() : 0)
+                    .isSpoiler(isSpoiler != null ? isSpoiler : false)
+                    .timestamp(LocalDateTime.now())
+                    .build();
+            
+            publishEvent(commentEventsTopic, commentId.toString(), event);
+            log.info("Published COMMENT_CREATED event for comment ID: {}, user: {}", commentId, userId);
         } catch (Exception e) {
-            log.error("Failed to publish {} event for comment ID: {}", eventType, commentId, e);
+            log.error("Failed to publish COMMENT_CREATED event for comment ID: {}", commentId, e);
         }
     }
 
     /**
-     * Publish review event (placeholder for future implementation)
+     * Publish review created event
      */
-    public void publishReviewEvent(String eventType, String reviewId, Object eventData) {
+    public void publishReviewCreatedEvent(Integer reviewId, UUID reviewUuid, UUID userId, 
+                                        Integer novelId, Integer rating, String title, 
+                                        String content, Boolean isSpoiler) {
         try {
-            publishEvent(reviewEventsTopic, reviewId, eventData);
-            log.info("Published {} event for review ID: {}", eventType, reviewId);
+            ReviewCreatedEvent event = ReviewCreatedEvent.builder()
+                    .reviewId(reviewId)
+                    .reviewUuid(reviewUuid)
+                    .userId(userId)
+                    .novelId(novelId)
+                    .rating(rating)
+                    .title(title)
+                    .contentLength(content != null ? content.length() : 0)
+                    .isSpoiler(isSpoiler != null ? isSpoiler : false)
+                    .timestamp(LocalDateTime.now())
+                    .build();
+            
+            publishEvent(reviewEventsTopic, reviewId.toString(), event);
+            log.info("Published REVIEW_CREATED event for review ID: {}, user: {}", reviewId, userId);
         } catch (Exception e) {
-            log.error("Failed to publish {} event for review ID: {}", eventType, reviewId, e);
+            log.error("Failed to publish REVIEW_CREATED event for review ID: {}", reviewId, e);
         }
     }
 
     /**
-     * Publish vote event (placeholder for future implementation)
+     * Publish vote created event
      */
-    public void publishVoteEvent(String eventType, String voteId, Object eventData) {
+    public void publishVoteCreatedEvent(Integer voteId, UUID userId, Integer novelId) {
         try {
-            publishEvent(voteEventsTopic, voteId, eventData);
-            log.info("Published {} event for vote ID: {}", eventType, voteId);
+            VoteCreatedEvent event = VoteCreatedEvent.builder()
+                    .voteId(voteId)
+                    .userId(userId)
+                    .novelId(novelId)
+                    .timestamp(LocalDateTime.now())
+                    .build();
+            
+            publishEvent(voteEventsTopic, voteId.toString(), event);
+            log.info("Published VOTE_CREATED event for vote ID: {}, user: {}", voteId, userId);
         } catch (Exception e) {
-            log.error("Failed to publish {} event for vote ID: {}", eventType, voteId, e);
+            log.error("Failed to publish VOTE_CREATED event for vote ID: {}", voteId, e);
         }
     }
 }
