@@ -69,15 +69,11 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
-# MyBatis Configuration
-mybatis:
-  type-aliases-package: com.yushan.engagement_service.entity
-  mapper-locations: classpath:mapper/**Mapper.xml
-  configuration:
-    map-underscore-to-camel-case: true
-    default-fetch-size: 100
-    default-statement-timeout: 30
-    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  # MyBatis Configuration
+  mybatis:
+    mapper-locations: classpath:/mapper/**Mapper.xml
+    type-aliases-package: com.yushan.engagement_service.entity
+    config-location: classpath:config/mybatis-config.xml
 
 # Eureka Configuration
 eureka:
@@ -108,10 +104,10 @@ feign:
 # Service URLs for inter-service communication
 services:
   content:
-    url: ${CONTENT_SERVICE_URL:http://localhost:8081}
+    url: ${CONTENT_SERVICE_URL:http://localhost:8082}
     name: content-service
   user:
-    url: ${USER_SERVICE_URL:http://localhost:8082}
+    url: ${USER_SERVICE_URL:http://localhost:8081}
     name: user-service
   gamification:
     url: ${GAMIFICATION_SERVICE_URL:http://localhost:8085}

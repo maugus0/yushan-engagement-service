@@ -6,6 +6,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Component
@@ -17,7 +18,7 @@ public class GamificationServiceClient {
     private String gamificationServiceUrl;
 
     public GamificationServiceClient(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+        this.restTemplate = Objects.requireNonNull(restTemplate, "RestTemplate cannot be null");
     }
 
     public void addExp(UUID userId, Float exp) {
