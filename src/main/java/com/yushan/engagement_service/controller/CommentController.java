@@ -11,13 +11,16 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 
 import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/comments")
+@RequestMapping("/api/v1/comments")
 @CrossOrigin(origins = "*")
+@Tag(name = "Comment Management", description = "APIs for managing comments")
 public class CommentController {
 
     @Autowired
@@ -33,6 +36,7 @@ public class CommentController {
     @PostMapping
     @PreAuthorize("hasAnyRole('USER','AUTHOR','ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "[USER] Create comment", description = "Create a new comment on a chapter. One per chapter per user.")
     public ApiResponse<CommentResponseDTO> createComment(@Valid @RequestBody CommentCreateRequestDTO request,
                                                          Authentication authentication) {
         UUID userId = getUserIdFromAuthentication(authentication);
@@ -45,6 +49,7 @@ public class CommentController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER','AUTHOR','ADMIN')")
+    @Operation(summary = "[USER] Update comment", description = "Update an existing comment. Only author can update.")
     public ApiResponse<CommentResponseDTO> updateComment(@PathVariable Integer id,
                                                          @Valid @RequestBody CommentUpdateRequestDTO request,
                                                          Authentication authentication) {
@@ -58,6 +63,7 @@ public class CommentController {
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER','AUTHOR','ADMIN')")
+    @Operation(summary = "[USER/ADMIN] Delete comment", description = "Delete a comment. Author or admin only.")
     public ApiResponse<String> deleteComment(@PathVariable Integer id,
                                              Authentication authentication) {
         UUID userId = getUserIdFromAuthentication(authentication);
@@ -75,6 +81,7 @@ public class CommentController {
      * Get comment by ID (public)
      */
     @GetMapping("/{id}")
+    @Operation(summary = "[PUBLIC] Get comment by id", description = "Retrieve a single comment by its ID.")
     public ApiResponse<CommentResponseDTO> getComment(@PathVariable Integer id,
                                                       Authentication authentication) {
         UUID userId = getUserIdFromAuthenticationOrNull(authentication);
@@ -86,6 +93,7 @@ public class CommentController {
      * Get comments for a specific chapter (public)
      */
     @GetMapping("/chapter/{chapterId}")
+    @Operation(summary = "[PUBLIC] Get comments by chapter", description = "List comments for a chapter with pagination and sorting.")
     public ApiResponse<CommentListResponseDTO> getCommentsByChapter(
             @PathVariable Integer chapterId,
             @RequestParam(value = "page", defaultValue = "0") Integer page,
@@ -103,6 +111,7 @@ public class CommentController {
      * Get comments for a specific novel (public, across all chapters)
      */
     @GetMapping("/novel/{novelId}")
+    @Operation(summary = "[PUBLIC] Get comments by novel", description = "List comments across all chapters of a novel with filters.")
     public ApiResponse<CommentListResponseDTO> getCommentsByNovel(
             @PathVariable Integer novelId,
             @RequestParam(value = "page", defaultValue = "0") Integer page,
@@ -134,6 +143,7 @@ public class CommentController {
      */
     @PostMapping("/{id}/like")
     @PreAuthorize("hasAnyRole('USER','AUTHOR','ADMIN')")
+    @Operation(summary = "[USER] Like comment", description = "Like a comment.")
     public ApiResponse<CommentResponseDTO> likeComment(@PathVariable Integer id,
                                                        Authentication authentication) {
         UUID userId = getUserIdFromAuthentication(authentication);
@@ -146,6 +156,7 @@ public class CommentController {
      */
     @PostMapping("/{id}/unlike")
     @PreAuthorize("hasAnyRole('USER','AUTHOR','ADMIN')")
+    @Operation(summary = "[USER] Unlike comment", description = "Remove like from a comment.")
     public ApiResponse<CommentResponseDTO> unlikeComment(@PathVariable Integer id,
                                                          Authentication authentication) {
         UUID userId = getUserIdFromAuthentication(authentication);
@@ -158,6 +169,7 @@ public class CommentController {
      */
     @GetMapping("/my-comments")
     @PreAuthorize("hasAnyRole('USER','AUTHOR','ADMIN')")
+    @Operation(summary = "[USER] Get my comments", description = "List current user's comments.")
     public ApiResponse<List<CommentResponseDTO>> getMyComments(Authentication authentication) {
         UUID userId = getUserIdFromAuthentication(authentication);
         List<CommentResponseDTO> comments = commentService.getUserComments(userId);
@@ -169,6 +181,7 @@ public class CommentController {
      */
     @GetMapping("/check/chapter/{chapterId}")
     @PreAuthorize("hasAnyRole('USER','AUTHOR','ADMIN')")
+    @Operation(summary = "[USER] Check commented on chapter", description = "Check if current user has commented on a chapter.")
     public ApiResponse<Boolean> hasUserCommentedOnChapter(@PathVariable Integer chapterId,
                                                           Authentication authentication) {
         UUID userId = getUserIdFromAuthentication(authentication);
@@ -180,6 +193,7 @@ public class CommentController {
      * Get comment statistics for a chapter (public)
      */
     @GetMapping("/chapter/{chapterId}/statistics")
+    @Operation(summary = "[PUBLIC] Get chapter comment stats", description = "Retrieve statistics for a chapter's comments.")
     public ApiResponse<CommentStatisticsDTO> getChapterCommentStats(@PathVariable Integer chapterId) {
         CommentStatisticsDTO stats = commentService.getChapterCommentStats(chapterId);
         return ApiResponse.success("Comment statistics retrieved", stats);
@@ -195,6 +209,7 @@ public class CommentController {
      */
     @GetMapping("/admin/moderation")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "[ADMIN] Moderation list", description = "List comments for moderation with filters.")
     public ApiResponse<CommentListResponseDTO> getAllCommentsForModeration(
             @RequestParam(value = "page", defaultValue = "0") Integer page,
             @RequestParam(value = "size", defaultValue = "50") Integer size,
@@ -230,6 +245,7 @@ public class CommentController {
      */
     @GetMapping("/admin/all")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "[ADMIN] List all comments", description = "Admin list with pagination and filters.")
     public ApiResponse<CommentListResponseDTO> getAllCommentsAdmin(
             @RequestParam(value = "page", defaultValue = "0") Integer page,
             @RequestParam(value = "size", defaultValue = "20") Integer size,
@@ -265,6 +281,7 @@ public class CommentController {
      */
     @GetMapping("/admin/search")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "[ADMIN] Search comments", description = "Advanced search for comments.")
     public ApiResponse<CommentListResponseDTO> searchCommentsAdmin(
             @RequestParam(value = "page", defaultValue = "0") Integer page,
             @RequestParam(value = "size", defaultValue = "20") Integer size,
@@ -300,6 +317,7 @@ public class CommentController {
      */
     @GetMapping("/admin/user/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "[ADMIN] Get user's comments", description = "List comments by specific user.")
     public ApiResponse<List<CommentResponseDTO>> getUserCommentsAdmin(
             @PathVariable String userId,
             Authentication authentication) {
@@ -313,6 +331,7 @@ public class CommentController {
      */
     @GetMapping("/admin/statistics")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "[ADMIN] Moderation statistics", description = "Retrieve moderation dashboard statistics.")
     public ApiResponse<CommentModerationStatsDTO> getModerationStats() {
         CommentModerationStatsDTO stats = commentService.getModerationStatistics();
         return ApiResponse.success("Moderation statistics retrieved", stats);
@@ -323,6 +342,7 @@ public class CommentController {
      */
     @DeleteMapping("/admin/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "[ADMIN] Delete any comment", description = "Admin can delete any comment by ID.")
     public ApiResponse<String> deleteCommentAdmin(@PathVariable Integer id) {
         boolean deleted = commentService.deleteComment(id, null, true);
         if (deleted) {
@@ -336,6 +356,7 @@ public class CommentController {
      */
     @PostMapping("/admin/batch-delete")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "[ADMIN] Batch delete comments", description = "Delete multiple comments by IDs.")
     public ApiResponse<String> batchDeleteComments(@Valid @RequestBody CommentBatchDeleteRequestDTO request) {
         int deletedCount = commentService.batchDeleteComments(request, true);
         return ApiResponse.success("Successfully deleted " + deletedCount + " comment(s)");
@@ -346,6 +367,7 @@ public class CommentController {
      */
     @DeleteMapping("/admin/user/{userId}/all")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "[ADMIN] Delete all user's comments", description = "Delete all comments of a user.")
     public ApiResponse<String> deleteAllUserComments(@PathVariable String userId) {
         UUID targetUserId = UUID.fromString(userId);
         int deletedCount = commentService.deleteAllUserComments(targetUserId);
@@ -357,6 +379,7 @@ public class CommentController {
      */
     @DeleteMapping("/admin/chapter/{chapterId}/all")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "[ADMIN] Delete all chapter comments", description = "Delete all comments in a chapter.")
     public ApiResponse<String> deleteAllChapterComments(@PathVariable Integer chapterId) {
         int deletedCount = commentService.deleteAllChapterComments(chapterId);
         return ApiResponse.success("Successfully deleted " + deletedCount + " comment(s) from chapter");
@@ -367,6 +390,7 @@ public class CommentController {
      */
     @PatchMapping("/admin/bulk-spoiler")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "[ADMIN] Bulk update spoiler", description = "Bulk update spoiler flag for comments.")
     public ApiResponse<String> bulkUpdateSpoilerStatus(
             @Valid @RequestBody CommentBulkSpoilerUpdateRequestDTO request) {
         int updatedCount = commentService.bulkUpdateSpoilerStatus(request);

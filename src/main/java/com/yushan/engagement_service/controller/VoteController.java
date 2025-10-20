@@ -9,12 +9,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/votes")
+@RequestMapping("/api/v1/votes")
 @CrossOrigin(origins = "*")
+@Tag(name = "Vote Management", description = "APIs for managing votes")
 public class VoteController {
 
     @Autowired
@@ -25,6 +28,7 @@ public class VoteController {
      */
     @PostMapping("/novels/{novelId}")
     @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "[USER] Toggle vote", description = "Vote or unvote a novel. One active vote per user.")
     public ApiResponse<VoteResponseDTO> toggleVote(@PathVariable Integer novelId,
                                                    Authentication authentication) {
         UUID userId = getUserIdFromAuthentication(authentication);
@@ -38,6 +42,7 @@ public class VoteController {
      */
     @GetMapping("/users")
     @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "[USER] Get user votes", description = "Retrieve the current user's vote history.")
     public ApiResponse<PageResponseDTO<VoteUserResponseDTO>> getUserVotes(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,

@@ -69,8 +69,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 
                         // Vote APIs
-                        .requestMatchers(HttpMethod.POST, "/api/votes/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/votes/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/votes/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/votes/**").authenticated()
 
                         // Comment APIs
                         .requestMatchers(HttpMethod.GET, "/api/v1/comments/**").permitAll()

@@ -4,6 +4,7 @@ import com.yushan.engagement_service.dao.ReviewMapper;
 import com.yushan.engagement_service.dto.review.*;
 import com.yushan.engagement_service.dto.common.*;
 import com.yushan.engagement_service.dto.novel.NovelDetailResponseDTO;
+import com.yushan.engagement_service.dto.review.NovelRatingStatsDTO;
 import com.yushan.engagement_service.entity.Review;
 import com.yushan.engagement_service.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,6 +76,58 @@ public class ReviewService {
         gamificationServiceClient.addExpForReview(userId);
 
         return toResponseDTO(review);
+    }
+
+    /**
+     * Get detailed novel rating statistics
+     */
+    public NovelRatingStatsDTO getNovelRatingStats(Integer novelId) {
+        // get novel basic info from content service
+        ApiResponse<NovelDetailResponseDTO> novelResponse = contentServiceClient.getNovelById(novelId);
+        if (novelResponse == null || novelResponse.getData() == null) {
+            throw new ResourceNotFoundException("Novel not found");
+        }
+
+        List<Review> reviews = reviewMapper.selectByNovelId(novelId);
+
+        NovelRatingStatsDTO stats = new NovelRatingStatsDTO();
+        stats.setNovelId(novelId);
+        stats.setNovelTitle(novelResponse.getData().getTitle());
+        stats.setTotalReviews(reviews.size());
+
+        // average rating: use novelResponse if available, otherwise compute
+        Float avgRating = null;
+        if (novelResponse.getData().getAverageRating() != null) {
+            avgRating = novelResponse.getData().getAverageRating().floatValue();
+        } else if (!reviews.isEmpty()) {
+            int totalRating = reviews.stream().mapToInt(Review::getRating).sum();
+            avgRating = (float) totalRating / reviews.size();
+            avgRating = Math.round(avgRating * 10.0f) / 10.0f;
+        }
+        stats.setAverageRating(avgRating);
+
+        if (!reviews.isEmpty()) {
+            long rating5 = reviews.stream().mapToInt(r -> r.getRating() == 5 ? 1 : 0).sum();
+            long rating4 = reviews.stream().mapToInt(r -> r.getRating() == 4 ? 1 : 0).sum();
+            long rating3 = reviews.stream().mapToInt(r -> r.getRating() == 3 ? 1 : 0).sum();
+            long rating2 = reviews.stream().mapToInt(r -> r.getRating() == 2 ? 1 : 0).sum();
+            long rating1 = reviews.stream().mapToInt(r -> r.getRating() == 1 ? 1 : 0).sum();
+
+            stats.setRating5Count((int) rating5);
+            stats.setRating4Count((int) rating4);
+            stats.setRating3Count((int) rating3);
+            stats.setRating2Count((int) rating2);
+            stats.setRating1Count((int) rating1);
+
+            int total = reviews.size();
+            stats.setRating5Percentage((float) rating5 / total * 100);
+            stats.setRating4Percentage((float) rating4 / total * 100);
+            stats.setRating3Percentage((float) rating3 / total * 100);
+            stats.setRating2Percentage((float) rating2 / total * 100);
+            stats.setRating1Percentage((float) rating1 / total * 100);
+        }
+
+        return stats;
     }
 
     /**
