@@ -3,6 +3,7 @@ package com.yushan.engagement_service.config;
 import com.yushan.engagement_service.security.CustomMethodSecurityExpressionHandler;
 import com.yushan.engagement_service.security.JwtAuthenticationEntryPoint;
 import com.yushan.engagement_service.security.JwtAuthenticationFilter;
+import com.yushan.engagement_service.security.UserActivityFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +31,9 @@ public class SecurityConfig {
 
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Autowired
+    private UserActivityFilter userActivityFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -68,14 +72,30 @@ public class SecurityConfig {
                         // CORS preflight requests
                         .requestMatchers(HttpMethod.OPTIONS, "/api/**").permitAll()
 
+                        // Vote APIs
+                        .requestMatchers(HttpMethod.POST, "/api/v1/votes/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/votes/**").authenticated()
+
                         // Comment APIs
                         .requestMatchers(HttpMethod.GET, "/api/v1/comments/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/comments/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/v1/comments/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/comments/**").authenticated()
 
+                        // Review APIs
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/reviews/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/reviews/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/reviews/**").authenticated()
+
+                        // Report APIs
+                        .requestMatchers(HttpMethod.POST, "/api/v1/reports/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reports/my-reports").authenticated()
+                        .requestMatchers("/api/v1/reports/admin/**").hasRole("ADMIN")
+
                         // Admin endpoints
                         .requestMatchers("/api/v1/comments/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/reviews/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/*/admin/**").hasRole("ADMIN")
 
                         // All other requests require authentication
@@ -83,7 +103,8 @@ public class SecurityConfig {
                 )
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(userActivityFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

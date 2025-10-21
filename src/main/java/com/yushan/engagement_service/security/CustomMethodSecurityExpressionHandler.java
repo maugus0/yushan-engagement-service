@@ -9,6 +9,8 @@ import org.springframework.context.expression.BeanFactoryResolver;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionOperations;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.AuthenticationTrustResolver;
+import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 
 /**
  * Custom Method Security Expression Handler
@@ -19,10 +21,12 @@ import org.springframework.security.core.Authentication;
 public class CustomMethodSecurityExpressionHandler implements MethodSecurityExpressionHandler, BeanFactoryAware {
 
     private BeanFactory beanFactory;
+    private AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
 
     @Override
     public EvaluationContext createEvaluationContext(Authentication authentication, MethodInvocation mi) {
         CustomSecurityExpressionRoot root = new CustomSecurityExpressionRoot(authentication);
+        root.setTrustResolver(trustResolver);
         
         // Create evaluation context with our custom root
         org.springframework.expression.spel.support.StandardEvaluationContext context =

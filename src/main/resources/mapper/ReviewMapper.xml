@@ -40,12 +40,9 @@
       #{content,jdbcType=VARCHAR}, #{likeCnt,jdbcType=INTEGER}, #{isSpoiler,jdbcType=BIT}, 
       #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP})
   </insert>
-  <insert id="insertSelective" parameterType="com.yushan.engagement_service.entity.Review" >
+  <insert id="insertSelective" parameterType="com.yushan.engagement_service.entity.Review" useGeneratedKeys="true" keyProperty="id">
     insert into review
     <trim prefix="(" suffix=")" suffixOverrides="," >
-      <if test="id != null" >
-        id,
-      </if>
       <if test="uuid != null" >
         uuid,
       </if>
@@ -78,9 +75,6 @@
       </if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides="," >
-      <if test="id != null" >
-        #{id,jdbcType=INTEGER},
-      </if>
       <if test="uuid != null" >
         #{uuid,jdbcType=OTHER},
       </if>
@@ -194,7 +188,7 @@
     order by create_time desc
   </select>
 
-  <select id="selectReviewsWithPagination" resultMap="BaseResultMap" parameterType="com.yushan.engagement_service.dto.ReviewSearchRequestDTO">
+  <select id="selectReviewsWithPagination" resultMap="BaseResultMap" parameterType="com.yushan.engagement_service.dto.review.ReviewSearchRequestDTO">
     select 
     <include refid="Base_Column_List" />
     from review
@@ -226,7 +220,7 @@
     limit #{size} offset #{page} * #{size}
   </select>
 
-  <select id="countReviews" resultType="long" parameterType="com.yushan.engagement_service.dto.ReviewSearchRequestDTO">
+  <select id="countReviews" resultType="long" parameterType="com.yushan.engagement_service.dto.review.ReviewSearchRequestDTO">
     select count(*)
     from review
     <where>

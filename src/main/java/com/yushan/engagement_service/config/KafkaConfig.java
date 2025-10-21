@@ -16,8 +16,8 @@ import java.util.Map;
 /**
  * Kafka configuration for Engagement Service
  * 
- * This configuration sets up Kafka producers for publishing novel events
- * to Analytics, Gamification, and Engagement services.
+ * This configuration sets up Kafka producers for publishing engagement events
+ * to Analytics, Gamification, and Content services.
  */
 @Configuration
 public class KafkaConfig {
@@ -25,7 +25,7 @@ public class KafkaConfig {
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
     private String bootstrapServers;
 
-    @Value("${spring.kafka.producer.client-id:content-service}")
+    @Value("${spring.kafka.producer.client-id:engagement-service}")
     private String clientId;
 
     @Value("${spring.kafka.producer.retries:3}")
@@ -57,6 +57,10 @@ public class KafkaConfig {
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
         
+        // Disable type information headers
+        configProps.put("spring.json.add.type.headers", false);
+        configProps.put("spring.json.use.type.headers", false);
+        
         // Reliability settings
         configProps.put(ProducerConfig.RETRIES_CONFIG, retries);
         configProps.put(ProducerConfig.ACKS_CONFIG, "all"); // Wait for all replicas
@@ -85,7 +89,7 @@ public class KafkaConfig {
         KafkaTemplate<String, Object> template = new KafkaTemplate<>(producerFactory());
         
         // Set default topic for convenience
-        template.setDefaultTopic("novel-events");
+        template.setDefaultTopic("comment-events");
         
         return template;
     }

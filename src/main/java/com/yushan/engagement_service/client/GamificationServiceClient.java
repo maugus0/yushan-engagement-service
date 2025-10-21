@@ -1,39 +1,15 @@
 package com.yushan.engagement_service.client;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
+import com.yushan.engagement_service.config.FeignAuthConfig;
+import com.yushan.engagement_service.dto.common.ApiResponse;
+import com.yushan.engagement_service.dto.gamification.VoteCheckResponseDTO;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+@FeignClient(name = "gamification-service", url = "${services.gamification.url:http://yushan-gamification-service:8085}", 
+            configuration = FeignAuthConfig.class)
+public interface GamificationServiceClient {
 
-@Component
-public class GamificationServiceClient {
-
-    private final RestTemplate restTemplate;
-
-    @Value("${services.gamification.url:http://localhost:8085}")
-    private String gamificationServiceUrl;
-
-    public GamificationServiceClient(RestTemplate restTemplate) {
-        this.restTemplate = Objects.requireNonNull(restTemplate, "RestTemplate cannot be null");
-    }
-
-    public void addExp(UUID userId, Float exp) {
-        try {
-            String url = gamificationServiceUrl + "/api/exp/add";
-
-            Map<String, Object> request = new HashMap<>();
-            request.put("userId", userId.toString());
-            request.put("exp", exp);
-            request.put("reason", "COMMENT_CREATED");
-
-            restTemplate.postForObject(url, request, Void.class);
-        } catch (Exception e) {
-            // Log error but don't fail the comment creation
-            System.err.println("Failed to add EXP for user " + userId + ": " + e.getMessage());
-        }
-    }
+    @GetMapping("/api/v1/gamification/votes/check")
+    ApiResponse<VoteCheckResponseDTO> checkVoteEligibility();
 }

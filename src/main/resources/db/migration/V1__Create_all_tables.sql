@@ -41,8 +41,7 @@ CREATE TABLE vote (
     user_id UUID NOT NULL,
     novel_id INTEGER NOT NULL,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT unique_user_novel_vote UNIQUE (user_id, novel_id)
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     -- Note: Foreign key constraints removed as referenced tables don't exist yet
     -- CONSTRAINT fk_vote_user FOREIGN KEY (user_id) REFERENCES users(uuid) ON DELETE CASCADE,
     -- CONSTRAINT fk_vote_novel FOREIGN KEY (novel_id) REFERENCES novel(id) ON DELETE CASCADE,

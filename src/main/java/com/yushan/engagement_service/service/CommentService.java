@@ -1,16 +1,17 @@
 package com.yushan.engagement_service.service;
 
 import com.yushan.engagement_service.client.ContentServiceClient;
-import com.yushan.engagement_service.client.GamificationServiceClient;
 import com.yushan.engagement_service.client.UserServiceClient;
 import com.yushan.engagement_service.dao.CommentMapper;
-import com.yushan.engagement_service.dto.*;
+import com.yushan.engagement_service.dto.comment.*;
+import com.yushan.engagement_service.dto.chapter.ChapterDetailResponseDTO;
 import com.yushan.engagement_service.entity.Comment;
 import com.yushan.engagement_service.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -29,9 +30,7 @@ public class CommentService {
     private UserServiceClient userServiceClient;
 
     @Autowired
-    private GamificationServiceClient gamificationServiceClient;
-
-    private static final Float COMMENT_EXP = 5f;
+    private KafkaEventProducerService kafkaEventProducerService;
 
     /**
      * Create a new comment
@@ -63,13 +62,19 @@ public class CommentService {
 
         commentMapper.insertSelective(comment);
 
-        // Add EXP via gamification service
-        gamificationServiceClient.addExp(userId, COMMENT_EXP);
+        // Publish Kafka event for gamification
+        kafkaEventProducerService.publishCommentCreatedEvent(
+                comment.getId(),
+                userId,
+                request.getChapterId(),
+                request.getContent(),
+                request.getIsSpoiler()
+        );
 
         return toResponseDTO(comment, userId);
     }
 
-    /**
+     /**
      * Update an existing comment
      * Only the author of the comment can update it
      */
@@ -145,24 +150,16 @@ public class CommentService {
      */
     public CommentListResponseDTO getCommentsByChapter(Integer chapterId, UUID currentUserId,
                                                        int page, int size, String sort, String order) {
-        // Validate chapter exists via content service
+        // Check if chapter exists via content service
         if (!contentServiceClient.chapterExists(chapterId)) {
             throw new ResourceNotFoundException("Chapter not found");
         }
 
         // Validate and set defaults
-        if (page < 0) {
-            page = 0;
-        }
-        if (size <= 0) {
-            size = 20;
-        }
-        if (size > 100) {
-            size = 100;
-        }
-        if (sort == null || sort.trim().isEmpty()) {
-            sort = "createTime";
-        }
+        if (page < 0) page = 0;
+        if (size <= 0) size = 20;
+        if (size > 100) size = 100;
+        if (sort == null || sort.trim().isEmpty()) sort = "createTime";
         if (order == null || (!order.equalsIgnoreCase("asc") && !order.equalsIgnoreCase("desc"))) {
             order = "desc";
         }
@@ -195,19 +192,65 @@ public class CommentService {
 
     /**
      * Get comments for a specific novel with pagination (across all chapters)
-     * This requires fetching chapter IDs from content service first
      */
     public CommentListResponseDTO getCommentsByNovel(Integer novelId, UUID currentUserId,
                                                      CommentSearchRequestDTO request) {
-        // TODO: Implement this by:
-        // 1. Call ContentServiceClient to get all chapter IDs for the novel
-        // 2. Query comments for those chapter IDs
-        // For now, return empty result
+        // Validate and set defaults
+        if (request.getPage() < 0) {
+            request.setPage(0);
+        }
+        if (request.getSize() <= 0) {
+            request.setSize(20);
+        }
+        if (request.getSize() > 100) {
+            request.setSize(100);
+        }
+        if (request.getSort() == null || request.getSort().trim().isEmpty()) {
+            request.setSort("createTime");
+        }
+        if (request.getOrder() == null || (!request.getOrder().equalsIgnoreCase("asc") && !request.getOrder().equalsIgnoreCase("desc"))) {
+            request.setOrder("desc");
+        }
+
+        // Get chapter IDs for this novel from content service
+        List<Integer> chapterIds = contentServiceClient.getChapterIdsByNovelId(novelId);
+        if (chapterIds.isEmpty()) {
+            // No chapters found, return empty result
+            return CommentListResponseDTO.builder()
+                    .comments(new ArrayList<>())
+                    .totalCount(0L)
+                    .totalPages(0)
+                    .currentPage(request.getPage())
+                    .pageSize(request.getSize())
+                    .build();
+        }
+
+        List<Comment> comments = commentMapper.selectCommentsByNovelWithPagination(
+                chapterIds,
+                request.getIsSpoiler(),
+                request.getSearch(),
+                request.getSort(),
+                request.getOrder(),
+                request.getPage(),
+                request.getSize()
+        );
+
+        long totalCount = commentMapper.countCommentsByNovel(
+                chapterIds,
+                request.getIsSpoiler(),
+                request.getSearch()
+        );
+
+        List<CommentResponseDTO> commentDTOs = comments.stream()
+                .map(c -> toResponseDTO(c, currentUserId))
+                .collect(Collectors.toList());
+
+        int totalPages = (int) Math.ceil((double) totalCount / request.getSize());
 
         return CommentListResponseDTO.builder()
-                .comments(List.of())
-                .totalCount(0L)
-                .totalPages(0)
+                .comments(commentDTOs)
+                .totalCount(totalCount)
+                .totalPages(totalPages)
                 .currentPage(request.getPage())
                 .pageSize(request.getSize())
                 .build();
@@ -258,6 +301,7 @@ public class CommentService {
 
     /**
      * Toggle like on a comment (increment like count)
+     * In a real application, you would need a separate table to track user likes
      */
     @Transactional
     public CommentResponseDTO toggleLike(Integer commentId, UUID currentUserId, boolean isLiking) {
@@ -289,9 +333,8 @@ public class CommentService {
      * Get comment statistics for a chapter
      */
     public CommentStatisticsDTO getChapterCommentStats(Integer chapterId) {
-        // Validate chapter exists via content service
-        ChapterDetailResponseDTO chapter = contentServiceClient.getChapter(chapterId);
-        if (chapter == null || !Boolean.TRUE.equals(chapter.getIsValid())) {
+        // Check if chapter exists via content service
+        if (!contentServiceClient.chapterExists(chapterId)) {
             throw new ResourceNotFoundException("Chapter not found");
         }
 
@@ -299,7 +342,7 @@ public class CommentService {
 
         CommentStatisticsDTO stats = CommentStatisticsDTO.builder()
                 .chapterId(chapterId)
-                .chapterTitle(chapter.getTitle())
+                .chapterTitle(contentServiceClient.getChapter(chapterId).getTitle())
                 .totalComments((long) comments.size())
                 .build();
 
@@ -362,6 +405,40 @@ public class CommentService {
         return deletedCount;
     }
 
+    /**
+     * Convert Comment entity to CommentResponseDTO
+     */
+    private CommentResponseDTO toResponseDTO(Comment comment, UUID currentUserId) {
+        CommentResponseDTO dto = CommentResponseDTO.builder()
+                .id(comment.getId())
+                .userId(comment.getUserId())
+                .chapterId(comment.getChapterId())
+                .content(comment.getContent())
+                .likeCnt(comment.getLikeCnt())
+                .isSpoiler(comment.getIsSpoiler())
+                .createTime(comment.getCreateTime())
+                .updateTime(comment.getUpdateTime())
+                .isOwnComment(currentUserId != null && currentUserId.equals(comment.getUserId()))
+                .build();
+
+        // Get username from UserService
+        try {
+            String username = userServiceClient.getUsernameById(comment.getUserId());
+            dto.setUsername(username);
+        } catch (Exception e) {
+            dto.setUsername(null);
+        }
+
+        // Get chapter title from ChapterMapper
+        ChapterDetailResponseDTO chapter = contentServiceClient.getChapter(comment.getChapterId());
+        if (chapter != null) {
+            dto.setChapterTitle(chapter.getTitle());
+        } else {
+            dto.setChapterTitle("Chapter not found");
+        }
+
+        return dto;
+    }
     /**
      * Get moderation statistics for admin dashboard
      */
@@ -478,44 +555,5 @@ public class CommentService {
         }
 
         return updatedCount;
-    }
-
-    /**
-     * Convert Comment entity to CommentResponseDTO
-     */
-    private CommentResponseDTO toResponseDTO(Comment comment, UUID currentUserId) {
-        CommentResponseDTO dto = CommentResponseDTO.builder()
-                .id(comment.getId())
-                .userId(comment.getUserId())
-                .chapterId(comment.getChapterId())
-                .content(comment.getContent())
-                .likeCnt(comment.getLikeCnt())
-                .isSpoiler(comment.getIsSpoiler())
-                .createTime(comment.getCreateTime())
-                .updateTime(comment.getUpdateTime())
-                .isOwnComment(currentUserId != null && currentUserId.equals(comment.getUserId()))
-                .build();
-
-        // Get username from UserService via client
-        try {
-            String username = userServiceClient.getUsernameById(comment.getUserId());
-            dto.setUsername(username);
-        } catch (Exception e) {
-            dto.setUsername("Unknown User");
-        }
-
-        // Get chapter title from ContentService via client
-        try {
-            ChapterDetailResponseDTO chapter = contentServiceClient.getChapter(comment.getChapterId());
-            if (chapter != null) {
-                dto.setChapterTitle(chapter.getTitle());
-            } else {
-                dto.setChapterTitle("Chapter not found");
-            }
-        } catch (Exception e) {
-            dto.setChapterTitle("Chapter not found");
-        }
-
-        return dto;
     }
 }

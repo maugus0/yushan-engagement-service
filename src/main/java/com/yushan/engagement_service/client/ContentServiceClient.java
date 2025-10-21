@@ -1,53 +1,72 @@
 package com.yushan.engagement_service.client;
 
-import com.yushan.engagement_service.dto.ApiResponse;
-import com.yushan.engagement_service.dto.ChapterDetailResponseDTO;
-import com.yushan.engagement_service.dto.NovelDetailResponseDTO;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.client.HttpClientErrorException;
+import com.yushan.engagement_service.config.FeignAuthConfig;
+import com.yushan.engagement_service.dto.common.ApiResponse;
+import com.yushan.engagement_service.dto.chapter.ChapterDetailResponseDTO;
+import com.yushan.engagement_service.dto.novel.NovelDetailResponseDTO;
+import org.springframework.cloud.openfeign.FeignClient;
+import feign.Response;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 
-@Component
-public class ContentServiceClient {
+@FeignClient(name = "content-service", url = "${services.content.url:http://yushan-content-service:8082}", 
+            configuration = FeignAuthConfig.class)
+public interface ContentServiceClient {
 
-    private final RestTemplate restTemplate;
+    @PostMapping("/api/v1/chapters/batch/get")
+    ApiResponse<List<ChapterDetailResponseDTO>> getChaptersBatch(@RequestBody List<Integer> chapterIds);
 
-    @Value("${services.content.url:http://localhost:8082}")
-    private String contentServiceUrl;
+    @PostMapping("/api/v1/novels/batch/get")
+    ApiResponse<List<NovelDetailResponseDTO>> getNovelsBatch(@RequestBody List<Integer> novelIds);
 
-    public ContentServiceClient(RestTemplate restTemplate) {
-        this.restTemplate = Objects.requireNonNull(restTemplate, "RestTemplate cannot be null");
-    }
+    @GetMapping("/api/v1/novels/{novelId}")
+    ApiResponse<NovelDetailResponseDTO> getNovelById(@PathVariable("novelId") Integer novelId);
 
-    public ChapterDetailResponseDTO getChapter(Integer chapterId) {
+    @GetMapping("/api/v1/novels/{novelId}/vote-count")
+    ApiResponse<Integer> getNovelVoteCount(@PathVariable("novelId") Integer novelId);
+
+    @PostMapping("/api/v1/novels/{novelId}/vote")
+    ApiResponse<String> incrementVoteCount(@PathVariable("novelId") Integer novelId);
+
+    @PutMapping("/api/v1/novels/{novelId}/rating")
+    ApiResponse<String> updateNovelRatingAndCount(
+            @PathVariable("novelId") Integer novelId,
+            @RequestParam("avgRating") Float avgRating,
+            @RequestParam("reviewCount") Integer reviewCount);
+
+    @GetMapping("/api/v1/chapters/novel/{novelId}")
+    ApiResponse<com.yushan.engagement_service.dto.common.PageResponseDTO<ChapterDetailResponseDTO>> getChaptersByNovelId(@PathVariable("novelId") Integer novelId);
+
+    // Raw variant to avoid deserialization issues when only existence is needed
+    @GetMapping("/api/v1/novels/{novelId}")
+    ApiResponse<Map<String, Object>> getNovelByIdRaw(@PathVariable("novelId") Integer novelId);
+
+    // Low-level variant returning only HTTP response for existence checks
+    @GetMapping("/api/v1/novels/{novelId}")
+    Response headlessGetNovelById(@PathVariable("novelId") Integer novelId);
+
+    default ChapterDetailResponseDTO getChapter(Integer chapterId) {
         try {
-            String url = contentServiceUrl + "/api/v1/chapters/batch/get";
             List<Integer> chapterIds = List.of(chapterId);
-            
-            // Use ParameterizedTypeReference for proper type handling
-            org.springframework.core.ParameterizedTypeReference<ApiResponse<List<ChapterDetailResponseDTO>>> responseType = 
-                new org.springframework.core.ParameterizedTypeReference<ApiResponse<List<ChapterDetailResponseDTO>>>() {};
-            
-            org.springframework.http.HttpEntity<List<Integer>> requestEntity = new org.springframework.http.HttpEntity<>(chapterIds);
-            ApiResponse<List<ChapterDetailResponseDTO>> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.POST, requestEntity, responseType).getBody();
+            ApiResponse<List<ChapterDetailResponseDTO>> response = getChaptersBatch(chapterIds);
             
             if (response != null && response.getData() != null && !response.getData().isEmpty()) {
                 return response.getData().get(0);
             }
             return null;
-        } catch (HttpClientErrorException.NotFound e) {
-            return null;
         } catch (Exception e) {
-            // Log error
-            throw new RuntimeException("Failed to fetch chapter from content service", e);
+            return null;
         }
     }
 
-    public boolean chapterExists(Integer chapterId) {
+    default boolean chapterExists(Integer chapterId) {
         try {
             ChapterDetailResponseDTO chapter = getChapter(chapterId);
             return chapter != null && Boolean.TRUE.equals(chapter.getIsValid());
@@ -56,34 +75,18 @@ public class ContentServiceClient {
         }
     }
 
-    public NovelDetailResponseDTO getNovelById(Integer novelId) {
+    default List<Integer> getChapterIdsByNovelId(Integer novelId) {
         try {
-            String url = contentServiceUrl + "/api/v1/novels/" + novelId;
-            
-            // Use ParameterizedTypeReference for proper type handling
-            org.springframework.core.ParameterizedTypeReference<ApiResponse<NovelDetailResponseDTO>> responseType = 
-                new org.springframework.core.ParameterizedTypeReference<ApiResponse<NovelDetailResponseDTO>>() {};
-            
-            ApiResponse<NovelDetailResponseDTO> response = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, null, responseType).getBody();
-            
-            if (response != null && response.getData() != null) {
-                return response.getData();
+            ApiResponse<com.yushan.engagement_service.dto.common.PageResponseDTO<ChapterDetailResponseDTO>> response = getChaptersByNovelId(novelId);
+            if (response != null && response.getData() != null && response.getData().getContent() != null) {
+                return response.getData().getContent().stream()
+                        .map(ChapterDetailResponseDTO::getId)
+                        .collect(java.util.stream.Collectors.toList());
             }
-            return null;
-        } catch (HttpClientErrorException.NotFound e) {
-            return null;
+            return new java.util.ArrayList<>();
         } catch (Exception e) {
-            // Log error
-            throw new RuntimeException("Failed to fetch novel from content service", e);
-        }
-    }
-
-    public boolean novelExists(Integer novelId) {
-        try {
-            NovelDetailResponseDTO novel = getNovelById(novelId);
-            return novel != null;
-        } catch (Exception e) {
-            return false;
+            System.out.println("Error getting chapters for novel " + novelId + ": " + e.getMessage());
+            return new java.util.ArrayList<>();
         }
     }
 }

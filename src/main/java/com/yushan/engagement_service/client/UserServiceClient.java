@@ -1,41 +1,28 @@
 package com.yushan.engagement_service.client;
 
-import com.yushan.engagement_service.dto.UserDTO;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.client.HttpClientErrorException;
+import com.yushan.engagement_service.config.FeignAuthConfig;
+import com.yushan.engagement_service.dto.common.ApiResponse;
+import com.yushan.engagement_service.dto.user.UserProfileResponseDTO;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
-import java.util.Objects;
 import java.util.UUID;
 
-@Component
-public class UserServiceClient {
+@FeignClient(name = "user-service", url = "${services.user.url:http://yushan-user-service:8081}", 
+            configuration = FeignAuthConfig.class)
+public interface UserServiceClient {
 
-    private final RestTemplate restTemplate;
+    @GetMapping("/api/v1/users/{userId}")
+    ApiResponse<UserProfileResponseDTO> getUser(@PathVariable("userId") UUID userId);
 
-    @Value("${services.user.url:http://localhost:8081}")
-    private String userServiceUrl;
-
-    public UserServiceClient(RestTemplate restTemplate) {
-        this.restTemplate = Objects.requireNonNull(restTemplate, "RestTemplate cannot be null");
-    }
-
-    public UserDTO getUser(UUID userId) {
+    default String getUsernameById(UUID userId) {
         try {
-            String url = userServiceUrl + "/api/users/" + userId;
-            return restTemplate.getForObject(url, UserDTO.class);
-        } catch (HttpClientErrorException.NotFound e) {
-            return null;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch user from user service", e);
-        }
-    }
-
-    public String getUsernameById(UUID userId) {
-        try {
-            UserDTO user = getUser(userId);
-            return user != null ? user.getUsername() : "Unknown User";
+            ApiResponse<UserProfileResponseDTO> response = getUser(userId);
+            if (response != null && response.getData() != null) {
+                return response.getData().getUsername();
+            }
+            return "Unknown User";
         } catch (Exception e) {
             return "Unknown User";
         }

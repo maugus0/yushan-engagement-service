@@ -1,7 +1,10 @@
 package com.yushan.engagement_service.service;
 
 import com.yushan.engagement_service.dao.ReviewMapper;
-import com.yushan.engagement_service.dto.*;
+import com.yushan.engagement_service.dto.review.*;
+import com.yushan.engagement_service.dto.common.*;
+import com.yushan.engagement_service.dto.novel.NovelDetailResponseDTO;
+import com.yushan.engagement_service.dto.review.NovelRatingStatsDTO;
 import com.yushan.engagement_service.entity.Review;
 import com.yushan.engagement_service.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +18,6 @@ import java.util.stream.Collectors;
 
 import com.yushan.engagement_service.client.ContentServiceClient;
 import com.yushan.engagement_service.client.UserServiceClient;
-import com.yushan.engagement_service.client.GamificationServiceClient;
 
 @Service
 public class ReviewService {
@@ -30,9 +32,7 @@ public class ReviewService {
     private UserServiceClient userServiceClient;
 
     @Autowired
-    private GamificationServiceClient gamificationServiceClient;
-
-    private static final Float REVIEW_EXP = 5f;
+    private KafkaEventProducerService kafkaEventProducerService;
 
     /**
      * Create a new review
@@ -40,9 +40,9 @@ public class ReviewService {
      */
     @Transactional
     public ReviewResponseDTO createReview(UUID userId, ReviewCreateRequestDTO request) {
-        // check novel if exists（by content service client）
-        if (!contentServiceClient.novelExists(request.getNovelId())) {
-            throw new ResourceNotFoundException("Novel not found");
+        ApiResponse<NovelDetailResponseDTO> novelResp = contentServiceClient.getNovelById(request.getNovelId());
+        if (novelResp == null || novelResp.getData() == null) {
+            throw new ResourceNotFoundException("Novel does not exist: " + request.getNovelId());
         }
 
         // check if user has already reviewed the novel
@@ -67,8 +67,19 @@ public class ReviewService {
 
         reviewMapper.insertSelective(review);
 
-        // add exp
-        gamificationServiceClient.addExp(userId, REVIEW_EXP);
+        // Update novel rating and review count
+        updateNovelRatingAndCount(request.getNovelId());
+
+        // Publish Kafka event for gamification
+        kafkaEventProducerService.publishReviewCreatedEvent(
+                review.getId(),
+                review.getUuid(),
+                userId,
+                request.getRating(),
+                request.getTitle(),
+                request.getContent(),
+                request.getIsSpoiler()
+        );
 
         return toResponseDTO(review);
     }
@@ -91,10 +102,12 @@ public class ReviewService {
 
         // Update fields if provided
         boolean hasChanges = false;
+        boolean ratingChanged = false;
         
         if (request.getRating() != null && !request.getRating().equals(existingReview.getRating())) {
             existingReview.setRating(request.getRating());
             hasChanges = true;
+            ratingChanged = true;
         }
         if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
             existingReview.setTitle(request.getTitle().trim());
@@ -112,6 +125,11 @@ public class ReviewService {
         if (hasChanges) {
             existingReview.setUpdateTime(new Date());
             reviewMapper.updateByPrimaryKeySelective(existingReview);
+
+            // Only update novel rating if rating changed
+            if (ratingChanged) {
+                updateNovelRatingAndCount(existingReview.getNovelId());
+            }
         }
 
         return toResponseDTO(existingReview);
@@ -133,9 +151,15 @@ public class ReviewService {
             throw new IllegalArgumentException("You can only delete your own reviews");
         }
 
+        Integer novelId = review.getNovelId();
         int result = reviewMapper.deleteByPrimaryKey(reviewId);
 
-        return result > 0;
+        if (result > 0) {
+            // Update novel rating and review count
+            updateNovelRatingAndCount(novelId);
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -217,8 +241,12 @@ public class ReviewService {
 
         // Increment or decrement like count
         int increment = isLiking ? 1 : -1;
-        reviewMapper.updateLikeCount(reviewId, increment);
-        review = reviewMapper.selectByPrimaryKey(reviewId);
+        int result = reviewMapper.updateLikeCount(reviewId, increment);
+
+        if (result > 0) {
+            // Fetch updated review
+            review = reviewMapper.selectByPrimaryKey(reviewId);
+        }
 
         return toResponseDTO(review);
     }
@@ -252,6 +280,7 @@ public class ReviewService {
         return toResponseDTO(review);
     }
 
+
     /**
      * Convert Review entity to ReviewResponseDTO
      */
@@ -269,13 +298,96 @@ public class ReviewService {
         dto.setCreateTime(review.getCreateTime());
         dto.setUpdateTime(review.getUpdateTime());
 
-        // get username（by user service client）
-        dto.setUsername(userServiceClient.getUsernameById(review.getUserId()));
-
-        // get novel title（by content service client）
-        var novelDetail = contentServiceClient.getNovelById(review.getNovelId());
-        dto.setNovelTitle(novelDetail != null ? novelDetail.getTitle() : "Novel not found");
-
+        // Get username from UserServiceClient
+        try {
+            String username = userServiceClient.getUsernameById(review.getUserId());
+            dto.setUsername(username);
+        } catch (Exception e) {
+            dto.setUsername(null);
+        }
+        
+        // Get novel title from ContentServiceClient
+        try {
+            ApiResponse<NovelDetailResponseDTO> novelDetail = contentServiceClient.getNovelById(review.getNovelId());
+            dto.setNovelTitle(novelDetail.getData().getTitle());
+        } catch (ResourceNotFoundException e) {
+            dto.setNovelTitle("Novel not found");
+        } catch (Exception e) {
+            dto.setNovelTitle(null);
+        }
+        
         return dto;
+    }
+
+    /**
+     * Update novel's average rating and review count
+     * This method calculates the statistics and calls NovelService
+     */
+    private void updateNovelRatingAndCount(Integer novelId) {
+        // Get all reviews for this novel
+        List<Review> reviews = reviewMapper.selectByNovelId(novelId);
+        
+        float avgRating;
+        int reviewCount;
+        
+        if (reviews.isEmpty()) {
+            // No reviews, set to default values
+            avgRating = 0.0f;
+            reviewCount = 0;
+        } else {
+            // Calculate average rating
+            double totalRating = reviews.stream()
+                    .mapToInt(Review::getRating)
+                    .sum();
+            avgRating = (float) (totalRating / reviews.size());
+            
+            // Round to 1 decimal place
+            avgRating = Math.round(avgRating * 10.0f) / 10.0f;
+            reviewCount = reviews.size();
+        }
+        
+        // Call contentServiceClient with calculated values
+        contentServiceClient.updateNovelRatingAndCount(novelId, avgRating, reviewCount);
+    }
+
+    /**
+     * Get detailed novel rating statistics
+     */
+    public NovelRatingStatsDTO getNovelRatingStats(Integer novelId) {
+        // Get novel basic info through contentServiceClient
+        ApiResponse<NovelDetailResponseDTO> novelDetail = contentServiceClient.getNovelById(novelId);
+
+        List<Review> reviews = reviewMapper.selectByNovelId(novelId);
+        
+        NovelRatingStatsDTO stats = new NovelRatingStatsDTO();
+        stats.setNovelId(novelId);
+        stats.setNovelTitle(novelDetail.getData().getTitle());
+        stats.setTotalReviews(reviews.size());
+        stats.setAverageRating(novelDetail.getData().getAvgRating());
+        
+        if (!reviews.isEmpty()) {
+            // Calculate rating distribution
+            long rating5 = reviews.stream().mapToInt(r -> r.getRating() == 5 ? 1 : 0).sum();
+            long rating4 = reviews.stream().mapToInt(r -> r.getRating() == 4 ? 1 : 0).sum();
+            long rating3 = reviews.stream().mapToInt(r -> r.getRating() == 3 ? 1 : 0).sum();
+            long rating2 = reviews.stream().mapToInt(r -> r.getRating() == 2 ? 1 : 0).sum();
+            long rating1 = reviews.stream().mapToInt(r -> r.getRating() == 1 ? 1 : 0).sum();
+            
+            stats.setRating5Count((int) rating5);
+            stats.setRating4Count((int) rating4);
+            stats.setRating3Count((int) rating3);
+            stats.setRating2Count((int) rating2);
+            stats.setRating1Count((int) rating1);
+            
+            // Calculate percentages
+            int total = reviews.size();
+            stats.setRating5Percentage((float) rating5 / total * 100);
+            stats.setRating4Percentage((float) rating4 / total * 100);
+            stats.setRating3Percentage((float) rating3 / total * 100);
+            stats.setRating2Percentage((float) rating2 / total * 100);
+            stats.setRating1Percentage((float) rating1 / total * 100);
+        }
+        
+        return stats;
     }
 }

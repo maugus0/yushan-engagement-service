@@ -1,7 +1,6 @@
 package com.yushan.engagement_service.util;
 
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -11,83 +10,87 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
+/**
+ * JWT Test Utility for generating test tokens
+ * This is only for development/testing purposes
+ */
 @Component
 public class JwtTestUtil {
 
     @Value("${jwt.secret}")
     private String secret;
 
-    @Value("${jwt.expiration:86400000}")
-    private Long expiration;
+    @Value("${jwt.issuer}")
+    private String issuer;
 
+    /**
+     * Get the secret key for JWT signing
+     */
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
     /**
-     * Generate test access token
+     * Generate test JWT token for AUTHOR role
      */
-    public String generateAccessToken(UUID userId, String email, String role) {
-        return generateAccessToken(userId, email, role, 0);
-    }
-
-    /**
-     * Generate test access token with status
-     */
-    public String generateAccessToken(UUID userId, String email, String role, Integer status) {
+    public String generateTestAuthorToken() {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", userId.toString());
-        claims.put("email", email);
-        claims.put("role", role);
-        claims.put("status", status);
-        claims.put("type", "ACCESS");
+        claims.put("userId", "550e8400-e29b-41d4-a716-446655440001");
+        claims.put("email", "author@test.com");
+        claims.put("username", "test_author");
+        claims.put("role", "AUTHOR");
+        claims.put("status", 0); // NORMAL
+        claims.put("tokenType", "access");
+
+        return createToken(claims, "author@test.com", 3600000); // 1 hour
+    }
+
+    /**
+     * Generate test JWT token for ADMIN role
+     */
+    public String generateTestAdminToken() {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", "550e8400-e29b-41d4-a716-446655440002");
+        claims.put("email", "admin@test.com");
+        claims.put("username", "test_admin");
+        claims.put("role", "ADMIN");
+        claims.put("status", 0); // NORMAL
+        claims.put("tokenType", "access");
+
+        return createToken(claims, "admin@test.com", 3600000); // 1 hour
+    }
+
+    /**
+     * Generate test JWT token for suspended user
+     */
+    public String generateTestSuspendedToken() {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", "550e8400-e29b-41d4-a716-446655440003");
+        claims.put("email", "suspended@test.com");
+        claims.put("username", "test_suspended");
+        claims.put("role", "AUTHOR");
+        claims.put("status", 1); // SUSPENDED
+        claims.put("tokenType", "access");
+
+        return createToken(claims, "suspended@test.com", 3600000); // 1 hour
+    }
+
+    /**
+     * Create JWT token with claims and expiration
+     */
+    private String createToken(Map<String, Object> claims, String subject, long expiration) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(email)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
-                .compact();
-    }
-
-    /**
-     * Generate test refresh token
-     */
-    public String generateRefreshToken(UUID userId, String email) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", userId.toString());
-        claims.put("email", email);
-        claims.put("type", "REFRESH");
-
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(email)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + expiration * 7))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
-                .compact();
-    }
-
-    /**
-     * Generate expired token for testing
-     */
-    public String generateExpiredToken(UUID userId, String email, String role) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("userId", userId.toString());
-        claims.put("email", email);
-        claims.put("role", role);
-        claims.put("status", 0);
-        claims.put("type", "ACCESS");
-
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(email)
-                .setIssuedAt(new Date(System.currentTimeMillis() - expiration * 2))
-                .setExpiration(new Date(System.currentTimeMillis() - expiration))
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .claims(claims)
+                .subject(subject)
+                .issuer(issuer)
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(getSigningKey())
                 .compact();
     }
 }

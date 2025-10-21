@@ -1,106 +1,135 @@
 package com.yushan.engagement_service.exception;
 
-import com.yushan.engagement_service.dto.ApiResponse;
+import com.yushan.engagement_service.dto.common.ApiResponse;
+import com.yushan.engagement_service.enums.ErrorCode;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.validation.FieldError;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 
-import java.util.HashMap;
-import java.util.Map;
-
+/**
+ * Global exception handler for the engagement service.
+ * Handles common exceptions and provides appropriate HTTP responses.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    
+    /**
+     * handle authorization denied exception
+     */
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleAuthorizationDeniedException(WebRequest request) {
+        ApiResponse<Object> errorResponse = ApiResponse.error(
+            ErrorCode.UNAUTHORIZED, 
+            "Access denied"
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
 
     /**
-     * Handle ResourceNotFoundException
+     * handle custom exceptions
      */
     @ExceptionHandler(ResourceNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ApiResponse<Object> handleResourceNotFoundException(ResourceNotFoundException ex) {
-        return ApiResponse.error(404, ex.getMessage());
+    public ResponseEntity<ApiResponse<Object>> handleResourceNotFoundException(ResourceNotFoundException e, WebRequest request) {
+        ApiResponse<Object> errorResponse = ApiResponse.error(
+            ErrorCode.NOT_FOUND, 
+            e.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ApiResponse<Object>> handleValidationException(ValidationException e, WebRequest request) {
+        ApiResponse<Object> errorResponse = ApiResponse.error(
+            ErrorCode.BAD_REQUEST, 
+            e.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleUnauthorizedException(UnauthorizedException e, WebRequest request) {
+        ApiResponse<Object> errorResponse = ApiResponse.error(
+            ErrorCode.UNAUTHORIZED, 
+            e.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiResponse<Object>> handleForbiddenException(ForbiddenException e, WebRequest request) {
+        ApiResponse<Object> errorResponse = ApiResponse.error(
+            ErrorCode.FORBIDDEN, 
+            e.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 
     /**
-     * Handle IllegalArgumentException
-     */
-    @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse<Object> handleIllegalArgumentException(IllegalArgumentException ex) {
-        return ApiResponse.error(400, ex.getMessage());
-    }
-
-    /**
-     * Handle validation errors
+     * handle method argument not valid exception
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
+    public ResponseEntity<ApiResponse<Object>> handleValidationException(MethodArgumentNotValidException e, WebRequest request) {
+        StringBuilder errorMessage = new StringBuilder();
+        e.getBindingResult().getFieldErrors().forEach(error -> {
+            if (errorMessage.length() > 0) {
+                errorMessage.append("; ");
+            }
+            errorMessage.append(error.getDefaultMessage());
         });
-
-        ApiResponse<Map<String, String>> response = new ApiResponse<>();
-        response.setSuccess(false);
-        response.setMessage("Validation failed");
-        response.setCode(400);
-        response.setData(errors);
-        return response;
+        
+        ApiResponse<Object> errorResponse = ApiResponse.error(
+            ErrorCode.BAD_REQUEST, 
+            errorMessage.toString()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     /**
-     * Handle AccessDeniedException
+     * handle bind exception
      */
-    @ExceptionHandler(AccessDeniedException.class)
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    public ApiResponse<Object> handleAccessDeniedException(AccessDeniedException ex) {
-        return ApiResponse.error(403, "Access denied: " + ex.getMessage());
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<ApiResponse<Object>> handleBindException(BindException e, WebRequest request) {
+        StringBuilder errorMessage = new StringBuilder();
+        e.getBindingResult().getFieldErrors().forEach(error -> {
+            if (errorMessage.length() > 0) {
+                errorMessage.append("; ");
+            }
+            errorMessage.append(error.getDefaultMessage());
+        });
+        
+        ApiResponse<Object> errorResponse = ApiResponse.error(
+            ErrorCode.BAD_REQUEST, 
+            errorMessage.toString()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
     /**
-     * Handle AuthenticationException
+     * Handle illegal argument exceptions
      */
-    @ExceptionHandler(AuthenticationException.class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public ApiResponse<Object> handleAuthenticationException(AuthenticationException ex) {
-        return ApiResponse.error(401, "Authentication failed: " + ex.getMessage());
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Object>> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
+        ApiResponse<Object> errorResponse = ApiResponse.error(
+            ErrorCode.BAD_REQUEST,
+            ex.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
     /**
-     * Handle BadCredentialsException
-     */
-    @ExceptionHandler(BadCredentialsException.class)
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public ApiResponse<Object> handleBadCredentialsException(BadCredentialsException ex) {
-        return ApiResponse.error(401, "Invalid credentials");
-    }
-
-    /**
-     * Handle general exceptions
+     * handle general exception
      */
     @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ApiResponse<Object> handleGenericException(Exception ex) {
-        ex.printStackTrace();
-        return ApiResponse.error(500, "An unexpected error occurred: " + ex.getMessage());
-    }
-
-    /**
-     * Handle RuntimeException
-     */
-    @ExceptionHandler(RuntimeException.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ApiResponse<Object> handleRuntimeException(RuntimeException ex) {
-        ex.printStackTrace();
-        return ApiResponse.error(500, "Runtime error: " + ex.getMessage());
+    public ResponseEntity<ApiResponse<Object>> handleException(Exception e, WebRequest request) {
+        ApiResponse<Object> errorResponse = ApiResponse.error(
+            ErrorCode.INTERNAL_SERVER_ERROR, 
+            "System error: " + e.getMessage()
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 }
