@@ -9,7 +9,6 @@ import com.yushan.engagement_service.entity.Vote;
 import com.yushan.engagement_service.client.ContentServiceClient;
 import com.yushan.engagement_service.client.UserServiceClient;
 import com.yushan.engagement_service.dto.novel.NovelDetailResponseDTO;
-import com.yushan.engagement_service.dto.user.UserResponseDTO;
 import com.yushan.engagement_service.exception.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -73,7 +72,7 @@ public class VoteService {
         vote.setUpdateTime(now);
         voteMapper.insertSelective(vote);
 
-        // // update yuan: TODO: userServiceClient
+        // // update yuan: TODO: gamification service client
         // user.setYuan(user.getYuan() - 1);
         // userMapper.updateByPrimaryKeySelective(user);
 
