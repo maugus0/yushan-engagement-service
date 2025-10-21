@@ -78,8 +78,20 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/comments/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/comments/**").authenticated()
 
+                        // Review APIs
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/reviews/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/reviews/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/reviews/**").authenticated()
+
+                        // Report APIs
+                        .requestMatchers(HttpMethod.POST, "/api/v1/reports/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reports/my-reports").authenticated()
+                        .requestMatchers("/api/v1/reports/admin/**").hasRole("ADMIN")
+
                         // Admin endpoints
                         .requestMatchers("/api/v1/comments/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/reviews/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/*/admin/**").hasRole("ADMIN")
 
                         // All other requests require authentication
