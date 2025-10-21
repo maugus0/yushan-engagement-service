@@ -26,9 +26,4 @@ public class VoteCreatedEvent {
      * User ID who created the vote
      */
     private UUID userId;
-    
-    /**
-     * Novel ID being voted on
-     */
-    private Integer novelId;
 }

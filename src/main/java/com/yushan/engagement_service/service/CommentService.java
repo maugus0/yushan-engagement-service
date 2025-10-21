@@ -67,7 +67,6 @@ public class CommentService {
                 comment.getId(),
                 userId,
                 request.getChapterId(),
-                null, // novelId - would need to get from chapter service
                 request.getContent(),
                 request.getIsSpoiler()
         );

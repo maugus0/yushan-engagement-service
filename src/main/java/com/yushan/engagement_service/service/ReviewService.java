@@ -75,7 +75,6 @@ public class ReviewService {
                 review.getId(),
                 review.getUuid(),
                 userId,
-                request.getNovelId(),
                 request.getRating(),
                 request.getTitle(),
                 request.getContent(),

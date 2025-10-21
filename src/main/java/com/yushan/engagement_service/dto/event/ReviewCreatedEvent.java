@@ -28,11 +28,6 @@ public class ReviewCreatedEvent {
     private UUID userId;
     
     /**
-     * Novel ID being reviewed
-     */
-    private Integer novelId;
-    
-    /**
      * Rating given (1-5)
      */
     private Integer rating;

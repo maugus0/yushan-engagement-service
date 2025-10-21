@@ -26,9 +26,4 @@ public class CommentCreatedEvent {
      * User ID who created the comment
      */
     private UUID userId;
-    
-    /**
-     * Novel ID being commented on
-     */
-    private Integer novelId;
 }

@@ -89,8 +89,7 @@ public class VoteService {
         // Publish Kafka event for gamification
         kafkaEventProducerService.publishVoteCreatedEvent(
                 vote.getId(),
-                userId,
-                novelId
+                userId
         );
 
         return new VoteResponseDTO(novelId, updatedVoteCount, true);

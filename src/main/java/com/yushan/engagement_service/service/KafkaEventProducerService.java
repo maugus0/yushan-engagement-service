@@ -10,7 +10,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -62,12 +61,11 @@ public class KafkaEventProducerService {
      * Publish comment created event
      */
     public void publishCommentCreatedEvent(Integer commentId, UUID userId, Integer chapterId, 
-                                         Integer novelId, String content, Boolean isSpoiler) {
+                                         String content, Boolean isSpoiler) {
         try {
             CommentCreatedEvent event = CommentCreatedEvent.builder()
                     .commentId(commentId)
                     .userId(userId)
-                    .novelId(novelId)
                     .build();
             
             publishEvent(commentEventsTopic, commentId.toString(), event);
@@ -81,13 +79,12 @@ public class KafkaEventProducerService {
      * Publish review created event
      */
     public void publishReviewCreatedEvent(Integer reviewId, UUID reviewUuid, UUID userId, 
-                                        Integer novelId, Integer rating, String title, 
+                                        Integer rating, String title, 
                                         String content, Boolean isSpoiler) {
         try {
             ReviewCreatedEvent event = ReviewCreatedEvent.builder()
                     .reviewId(reviewId)
                     .userId(userId)
-                    .novelId(novelId)
                     .rating(rating)
                     .build();
             
@@ -101,12 +98,11 @@ public class KafkaEventProducerService {
     /**
      * Publish vote created event
      */
-    public void publishVoteCreatedEvent(Integer voteId, UUID userId, Integer novelId) {
+    public void publishVoteCreatedEvent(Integer voteId, UUID userId) {
         try {
             VoteCreatedEvent event = VoteCreatedEvent.builder()
                     .voteId(voteId)
                     .userId(userId)
-                    .novelId(novelId)
                     .build();
             
             publishEvent(voteEventsTopic, voteId.toString(), event);
