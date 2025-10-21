@@ -67,11 +67,7 @@ public class KafkaEventProducerService {
             CommentCreatedEvent event = CommentCreatedEvent.builder()
                     .commentId(commentId)
                     .userId(userId)
-                    .chapterId(chapterId)
                     .novelId(novelId)
-                    .contentLength(content != null ? content.length() : 0)
-                    .isSpoiler(isSpoiler != null ? isSpoiler : false)
-                    .timestamp(LocalDateTime.now())
                     .build();
             
             publishEvent(commentEventsTopic, commentId.toString(), event);
@@ -90,14 +86,9 @@ public class KafkaEventProducerService {
         try {
             ReviewCreatedEvent event = ReviewCreatedEvent.builder()
                     .reviewId(reviewId)
-                    .reviewUuid(reviewUuid)
                     .userId(userId)
                     .novelId(novelId)
                     .rating(rating)
-                    .title(title)
-                    .contentLength(content != null ? content.length() : 0)
-                    .isSpoiler(isSpoiler != null ? isSpoiler : false)
-                    .timestamp(LocalDateTime.now())
                     .build();
             
             publishEvent(reviewEventsTopic, reviewId.toString(), event);
@@ -116,7 +107,6 @@ public class KafkaEventProducerService {
                     .voteId(voteId)
                     .userId(userId)
                     .novelId(novelId)
-                    .timestamp(LocalDateTime.now())
                     .build();
             
             publishEvent(voteEventsTopic, voteId.toString(), event);

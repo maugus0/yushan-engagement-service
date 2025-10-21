@@ -57,6 +57,10 @@ public class KafkaConfig {
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
         
+        // Disable type information headers
+        configProps.put("spring.json.add.type.headers", false);
+        configProps.put("spring.json.use.type.headers", false);
+        
         // Reliability settings
         configProps.put(ProducerConfig.RETRIES_CONFIG, retries);
         configProps.put(ProducerConfig.ACKS_CONFIG, "all"); // Wait for all replicas

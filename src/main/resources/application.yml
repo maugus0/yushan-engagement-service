@@ -79,6 +79,9 @@ spring:
       compression-type: snappy
       request-timeout-ms: 30000
       delivery-timeout-ms: 120000
+      properties:
+        spring.json.add.type.headers: false
+        spring.json.use.type.headers: false
       topic:
         comment-events: comment-events
         review-events: review-events
