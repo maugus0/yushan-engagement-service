@@ -3,6 +3,7 @@ package com.yushan.engagement_service.config;
 import com.yushan.engagement_service.security.CustomMethodSecurityExpressionHandler;
 import com.yushan.engagement_service.security.JwtAuthenticationEntryPoint;
 import com.yushan.engagement_service.security.JwtAuthenticationFilter;
+import com.yushan.engagement_service.security.UserActivityFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,6 +31,9 @@ public class SecurityConfig {
 
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Autowired
+    private UserActivityFilter userActivityFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -99,7 +103,8 @@ public class SecurityConfig {
                 )
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(userActivityFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

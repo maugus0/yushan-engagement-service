@@ -2,6 +2,7 @@ package com.yushan.engagement_service.service;
 
 import com.yushan.engagement_service.dto.event.CommentCreatedEvent;
 import com.yushan.engagement_service.dto.event.ReviewCreatedEvent;
+import com.yushan.engagement_service.dto.event.UserActivityEvent;
 import com.yushan.engagement_service.dto.event.VoteCreatedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,6 +110,19 @@ public class KafkaEventProducerService {
             log.info("Published VOTE_CREATED event for vote ID: {}, user: {}", voteId, userId);
         } catch (Exception e) {
             log.error("Failed to publish VOTE_CREATED event for vote ID: {}", voteId, e);
+        }
+    }
+
+    /**
+     * Publish user activity event
+     */
+    public void publishUserActivityEvent(UserActivityEvent event) {
+        try {
+            publishEvent("active", event.userId().toString(), event);
+            log.info("Published user activity event for user: {}, service: {}, endpoint: {}", 
+                     event.userId(), event.serviceName(), event.endpoint());
+        } catch (Exception e) {
+            log.error("Failed to publish user activity event for user: {}", event.userId(), e);
         }
     }
 }
