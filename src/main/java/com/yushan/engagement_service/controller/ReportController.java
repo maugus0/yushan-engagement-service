@@ -1,8 +1,11 @@
 package com.yushan.engagement_service.controller;
 
-import com.yushan.engagement_service.dto.*;
 import com.yushan.engagement_service.dto.common.ApiResponse;
 import com.yushan.engagement_service.dto.common.PageResponseDTO;
+import com.yushan.engagement_service.dto.report.ReportCreateRequestDTO;
+import com.yushan.engagement_service.dto.report.ReportResolutionRequestDTO;
+import com.yushan.engagement_service.dto.report.ReportResponseDTO;
+import com.yushan.engagement_service.dto.report.ReportSearchRequestDTO;
 import com.yushan.engagement_service.service.ReportService;
 import com.yushan.engagement_service.security.CustomUserDetails;
 import jakarta.validation.Valid;

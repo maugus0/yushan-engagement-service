@@ -7,8 +7,9 @@ import com.yushan.engagement_service.dto.vote.VoteResponseDTO;
 import com.yushan.engagement_service.dto.vote.VoteUserResponseDTO;
 import com.yushan.engagement_service.entity.Vote;
 import com.yushan.engagement_service.client.ContentServiceClient;
-import com.yushan.engagement_service.client.UserServiceClient;
+import com.yushan.engagement_service.client.GamificationServiceClient;
 import com.yushan.engagement_service.dto.novel.NovelDetailResponseDTO;
+import com.yushan.engagement_service.dto.gamification.VoteCheckResponseDTO;
 import com.yushan.engagement_service.exception.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,7 @@ public class VoteService {
     private ContentServiceClient contentServiceClient;
 
     @Autowired
-    private UserServiceClient userServiceClient;
+    private GamificationServiceClient gamificationServiceClient;
 
     @Autowired
     private KafkaEventProducerService kafkaEventProducerService;
@@ -51,17 +52,23 @@ public class VoteService {
         if (novel.getAuthorId() != null && novel.getAuthorId().equals(userId)) {
             throw new ValidationException("Cannot vote your own novel");
         }
-        // Load user and check yuan >= 1
-        // TODO: userServiceClient
-        // UserResponseDTO user = userServiceClient.getUser(userId);
-        // if (user == null) {
-        //     throw new ValidationException("User not found");
-        // }
-        // NOTE: engagement UserResponseDTO lacks yuan; if needed, extend DTO to include yuan
-        // TODO
-        // if (user.getYuan() < 1) {
-        //     throw new ValidationException("Not enough yuan");
-        // }
+
+        // Check if user can vote (has enough Yuan) via gamification service
+        ApiResponse<VoteCheckResponseDTO> voteCheckResponse = gamificationServiceClient.checkVoteEligibility();
+        if (voteCheckResponse == null) {
+            throw new ValidationException("Vote check failed: response is null");
+        }
+        
+        if (voteCheckResponse.getData() == null) {
+            throw new ValidationException("Vote check failed: data is missing");
+        }
+        
+        if (!voteCheckResponse.getData().isCanVote()) {
+            String message = voteCheckResponse.getData().getMessage();
+            throw new ValidationException(
+                message != null ? message : "Not enough Yuan to vote"
+            );
+        }
 
         // Create vote (no toggle per backend logic; always create and charge 1 yuan)
         Vote vote = new Vote();
@@ -71,11 +78,7 @@ public class VoteService {
         vote.setCreateTime(now);
         vote.setUpdateTime(now);
         voteMapper.insertSelective(vote);
-
-        // // update yuan: TODO: gamification service client
-        // user.setYuan(user.getYuan() - 1);
-        // userMapper.updateByPrimaryKeySelective(user);
-
+       
         // Update novel vote count
         contentServiceClient.incrementVoteCount(novelId);
         // Get updated vote count

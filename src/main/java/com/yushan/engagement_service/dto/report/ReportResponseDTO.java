@@ -1,4 +1,4 @@
-package com.yushan.engagement_service.dto;
+package com.yushan.engagement_service.dto.report;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;

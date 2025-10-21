@@ -1,6 +1,6 @@
 package com.yushan.engagement_service.dao;
 
-import com.yushan.engagement_service.dto.ReportSearchRequestDTO;
+import com.yushan.engagement_service.dto.report.ReportSearchRequestDTO;
 import com.yushan.engagement_service.entity.Report;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

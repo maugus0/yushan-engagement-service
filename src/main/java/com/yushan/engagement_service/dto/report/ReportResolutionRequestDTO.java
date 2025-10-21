@@ -1,4 +1,4 @@
-package com.yushan.engagement_service.dto;
+package com.yushan.engagement_service.dto.report;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
