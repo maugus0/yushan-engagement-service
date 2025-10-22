@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: engagement-service
+  cloud:
+    config:
+      uri: ${CONFIG_SERVER_URI:http://config-server:8888}
+      fail-fast: true
+      retry:
+        initial-interval: 1000
+        max-attempts: 6
+        max-interval: 2000
+        multiplier: 1.1
+      profile: ${SPRING_PROFILES_ACTIVE:default}
+      label: ${CONFIG_LABEL:main}
+      discovery:
+        enabled: true
+        service-id: config-server
