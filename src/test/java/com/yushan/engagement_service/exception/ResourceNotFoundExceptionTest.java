@@ -2,59 +2,159 @@ package com.yushan.engagement_service.exception;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Unit tests for ResourceNotFoundException
- */
 class ResourceNotFoundExceptionTest {
 
     @Test
-    void constructor_WithMessage_SetsMessage() {
-        // Arrange
+    void testResourceNotFoundException_WithMessage() {
+        // Given
         String message = "Resource not found";
 
-        // Act
+        // When
         ResourceNotFoundException exception = new ResourceNotFoundException(message);
 
-        // Assert
+        // Then
+        assertNotNull(exception);
+        assertEquals(message, exception.getMessage());
+        assertNull(exception.getCause());
+        assertEquals(HttpStatus.NOT_FOUND.value(), 404);
+    }
+
+    @Test
+    void testResourceNotFoundException_WithMessageAndCause() {
+        // Given
+        String message = "Resource not found";
+        Throwable cause = new IllegalArgumentException("Invalid ID");
+
+        // When
+        ResourceNotFoundException exception = new ResourceNotFoundException(message, cause);
+
+        // Then
+        assertNotNull(exception);
+        assertEquals(message, exception.getMessage());
+        assertEquals(cause, exception.getCause());
+        assertEquals(HttpStatus.NOT_FOUND.value(), 404);
+    }
+
+    @Test
+    void testResourceNotFoundException_EmptyMessage() {
+        // Given
+        String message = "";
+
+        // When
+        ResourceNotFoundException exception = new ResourceNotFoundException(message);
+
+        // Then
+        assertNotNull(exception);
         assertEquals(message, exception.getMessage());
         assertNull(exception.getCause());
     }
 
     @Test
-    void constructor_WithMessageAndCause_SetsMessageAndCause() {
-        // Arrange
-        String message = "Resource not found";
-        Throwable cause = new IllegalArgumentException("Invalid ID");
+    void testResourceNotFoundException_NullMessage() {
+        // Given
+        String message = null;
 
-        // Act
+        // When
+        ResourceNotFoundException exception = new ResourceNotFoundException(message);
+
+        // Then
+        assertNotNull(exception);
+        assertNull(exception.getMessage());
+        assertNull(exception.getCause());
+    }
+
+    @Test
+    void testResourceNotFoundException_NullCause() {
+        // Given
+        String message = "Resource not found";
+        Throwable cause = null;
+
+        // When
         ResourceNotFoundException exception = new ResourceNotFoundException(message, cause);
 
-        // Assert
+        // Then
+        assertNotNull(exception);
         assertEquals(message, exception.getMessage());
-        assertEquals(cause, exception.getCause());
+        assertNull(exception.getCause());
     }
 
     @Test
-    void responseStatus_ShouldBeNotFound() {
-        // Arrange
-        ResourceNotFoundException exception = new ResourceNotFoundException("Test");
+    void testResourceNotFoundException_Inheritance() {
+        // Given
+        String message = "Resource not found";
 
-        // Act & Assert
-        ResponseStatus annotation = exception.getClass().getAnnotation(ResponseStatus.class);
-        assertNotNull(annotation);
-        assertEquals(HttpStatus.NOT_FOUND, annotation.value());
-    }
+        // When
+        ResourceNotFoundException exception = new ResourceNotFoundException(message);
 
-    @Test
-    void inheritance_ShouldExtendRuntimeException() {
-        // Arrange
-        ResourceNotFoundException exception = new ResourceNotFoundException("Test");
-
-        // Assert
+        // Then
         assertTrue(exception instanceof RuntimeException);
+        assertTrue(exception instanceof Exception);
+    }
+
+    @Test
+    void testResourceNotFoundException_StackTrace() {
+        // Given
+        String message = "Resource not found";
+
+        // When
+        ResourceNotFoundException exception = new ResourceNotFoundException(message);
+
+        // Then
+        assertNotNull(exception.getStackTrace());
+        assertTrue(exception.getStackTrace().length > 0);
+    }
+
+    @Test
+    void testResourceNotFoundException_ChainedException() {
+        // Given
+        String message = "Resource not found";
+        IllegalArgumentException cause = new IllegalArgumentException("Invalid ID");
+        ResourceNotFoundException exception = new ResourceNotFoundException(message, cause);
+
+        // When
+        RuntimeException thrown = new RuntimeException("Wrapper", exception);
+
+        // Then
+        assertNotNull(thrown.getCause());
+        assertTrue(thrown.getCause() instanceof ResourceNotFoundException);
+        assertEquals(message, thrown.getCause().getMessage());
+        assertEquals(cause, thrown.getCause().getCause());
+    }
+
+    @Test
+    void testResourceNotFoundException_MultipleConstructors() {
+        // Given
+        String message = "Resource not found";
+        Throwable cause = new RuntimeException("Cause");
+
+        // When
+        ResourceNotFoundException exception1 = new ResourceNotFoundException(message);
+        ResourceNotFoundException exception2 = new ResourceNotFoundException(message, cause);
+
+        // Then
+        assertNotNull(exception1);
+        assertNotNull(exception2);
+        assertEquals(message, exception1.getMessage());
+        assertEquals(message, exception2.getMessage());
+        assertNull(exception1.getCause());
+        assertEquals(cause, exception2.getCause());
+    }
+
+    @Test
+    void testResourceNotFoundException_ToString() {
+        // Given
+        String message = "Resource not found";
+
+        // When
+        ResourceNotFoundException exception = new ResourceNotFoundException(message);
+
+        // Then
+        String toString = exception.toString();
+        assertNotNull(toString);
+        assertTrue(toString.contains("ResourceNotFoundException"));
+        assertTrue(toString.contains(message));
     }
 }
