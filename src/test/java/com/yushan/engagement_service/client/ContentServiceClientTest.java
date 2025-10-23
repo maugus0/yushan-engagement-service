@@ -4,224 +4,549 @@ import com.yushan.engagement_service.dto.chapter.ChapterDetailResponseDTO;
 import com.yushan.engagement_service.dto.common.ApiResponse;
 import com.yushan.engagement_service.dto.common.PageResponseDTO;
 import com.yushan.engagement_service.dto.novel.NovelDetailResponseDTO;
+import feign.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Date;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit tests for ContentServiceClient
- */
 @ExtendWith(MockitoExtension.class)
 class ContentServiceClientTest {
 
     @Mock
     private ContentServiceClient contentServiceClient;
 
+    private ChapterDetailResponseDTO testChapter;
+    private NovelDetailResponseDTO testNovel;
+    private ApiResponse<List<ChapterDetailResponseDTO>> chapterListResponse;
+    private ApiResponse<List<NovelDetailResponseDTO>> novelListResponse;
+    private ApiResponse<NovelDetailResponseDTO> novelResponse;
+    private ApiResponse<Integer> voteCountResponse;
+    private ApiResponse<String> stringResponse;
+    private ApiResponse<PageResponseDTO<ChapterDetailResponseDTO>> pageResponse;
+
     @BeforeEach
     void setUp() {
-        // Reset mocks before each test
-        reset(contentServiceClient);
+        // Setup test chapter
+        testChapter = new ChapterDetailResponseDTO();
+        testChapter.setId(1);
+        testChapter.setIsValid(true);
+        testChapter.setTitle("Test Chapter");
+        testChapter.setContent("Test Content");
+
+        // Setup test novel
+        testNovel = new NovelDetailResponseDTO();
+        testNovel.setId(1);
+        testNovel.setTitle("Test Novel");
+        testNovel.setSynopsis("Test Synopsis");
+
+        // Setup responses
+        chapterListResponse = ApiResponse.success("Success", Arrays.asList(testChapter));
+        novelListResponse = ApiResponse.success("Success", Arrays.asList(testNovel));
+        novelResponse = ApiResponse.success("Success", testNovel);
+        voteCountResponse = ApiResponse.success("Success", 10);
+        stringResponse = ApiResponse.success("Success", "OK");
+
+        PageResponseDTO<ChapterDetailResponseDTO> pageData = new PageResponseDTO<>();
+        pageData.setContent(Arrays.asList(testChapter));
+        pageData.setTotalElements(1L);
+        pageData.setTotalPages(1);
+        pageData.setCurrentPage(0);
+        pageData.setSize(10);
+        pageResponse = ApiResponse.success("Success", pageData);
     }
 
     @Test
-    void getChaptersBatch_Success() {
-        // Arrange
-        List<Integer> chapterIds = List.of(1, 2);
-        List<ChapterDetailResponseDTO> chapters = List.of(
-            createChapterDTO(1, "Chapter 1"),
-            createChapterDTO(2, "Chapter 2")
-        );
-        ApiResponse<List<ChapterDetailResponseDTO>> response = ApiResponse.success(chapters);
-        
-        when(contentServiceClient.getChaptersBatch(chapterIds)).thenReturn(response);
+    void testGetChaptersBatch_Success() {
+        // Given
+        List<Integer> chapterIds = Arrays.asList(1, 2);
+        when(contentServiceClient.getChaptersBatch(chapterIds)).thenReturn(chapterListResponse);
 
-        // Act
+        // When
         ApiResponse<List<ChapterDetailResponseDTO>> result = contentServiceClient.getChaptersBatch(chapterIds);
 
-        // Assert
+        // Then
         assertNotNull(result);
+        assertEquals(200, result.getCode());
+        assertEquals("Success", result.getMessage());
         assertNotNull(result.getData());
-        assertEquals(2, result.getData().size());
-        assertEquals("Chapter 1", result.getData().get(0).getTitle());
-        assertEquals("Chapter 2", result.getData().get(1).getTitle());
+        assertEquals(1, result.getData().size());
+        assertEquals(testChapter.getId(), result.getData().get(0).getId());
+
         verify(contentServiceClient).getChaptersBatch(chapterIds);
     }
 
     @Test
-    void getNovelsBatch_Success() {
-        // Arrange
-        List<Integer> novelIds = List.of(1, 2);
-        List<NovelDetailResponseDTO> novels = List.of(
-            createNovelDTO(1, "Novel 1"),
-            createNovelDTO(2, "Novel 2")
-        );
-        ApiResponse<List<NovelDetailResponseDTO>> response = ApiResponse.success(novels);
-        
-        when(contentServiceClient.getNovelsBatch(novelIds)).thenReturn(response);
+    void testGetChaptersBatch_EmptyList() {
+        // Given
+        List<Integer> chapterIds = Collections.emptyList();
+        ApiResponse<List<ChapterDetailResponseDTO>> emptyResponse = ApiResponse.success("Success", Collections.emptyList());
+        when(contentServiceClient.getChaptersBatch(chapterIds)).thenReturn(emptyResponse);
 
-        // Act
-        ApiResponse<List<NovelDetailResponseDTO>> result = contentServiceClient.getNovelsBatch(novelIds);
+        // When
+        ApiResponse<List<ChapterDetailResponseDTO>> result = contentServiceClient.getChaptersBatch(chapterIds);
 
-        // Assert
+        // Then
         assertNotNull(result);
         assertNotNull(result.getData());
-        assertEquals(2, result.getData().size());
-        assertEquals("Novel 1", result.getData().get(0).getTitle());
-        assertEquals("Novel 2", result.getData().get(1).getTitle());
+        assertTrue(result.getData().isEmpty());
+
+        verify(contentServiceClient).getChaptersBatch(chapterIds);
+    }
+
+    @Test
+    void testGetNovelsBatch_Success() {
+        // Given
+        List<Integer> novelIds = Arrays.asList(1, 2);
+        when(contentServiceClient.getNovelsBatch(novelIds)).thenReturn(novelListResponse);
+
+        // When
+        ApiResponse<List<NovelDetailResponseDTO>> result = contentServiceClient.getNovelsBatch(novelIds);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(200, result.getCode());
+        assertEquals("Success", result.getMessage());
+        assertNotNull(result.getData());
+        assertEquals(1, result.getData().size());
+        assertEquals(testNovel.getId(), result.getData().get(0).getId());
+
         verify(contentServiceClient).getNovelsBatch(novelIds);
     }
 
     @Test
-    void getNovelById_Success() {
-        // Arrange
-        NovelDetailResponseDTO novel = createNovelDTO(1, "Test Novel");
-        ApiResponse<NovelDetailResponseDTO> response = ApiResponse.success(novel);
-        
-        when(contentServiceClient.getNovelById(1)).thenReturn(response);
+    void testGetNovelById_Success() {
+        // Given
+        Integer novelId = 1;
+        when(contentServiceClient.getNovelById(novelId)).thenReturn(novelResponse);
 
-        // Act
-        ApiResponse<NovelDetailResponseDTO> result = contentServiceClient.getNovelById(1);
+        // When
+        ApiResponse<NovelDetailResponseDTO> result = contentServiceClient.getNovelById(novelId);
 
-        // Assert
+        // Then
         assertNotNull(result);
+        assertEquals(200, result.getCode());
+        assertEquals("Success", result.getMessage());
         assertNotNull(result.getData());
-        assertEquals(1, result.getData().getId());
-        assertEquals("Test Novel", result.getData().getTitle());
-        verify(contentServiceClient).getNovelById(1);
+        assertEquals(testNovel.getId(), result.getData().getId());
+
+        verify(contentServiceClient).getNovelById(novelId);
     }
 
     @Test
-    void getNovelVoteCount_Success() {
-        // Arrange
-        ApiResponse<Integer> response = ApiResponse.success(100);
-        
-        when(contentServiceClient.getNovelVoteCount(1)).thenReturn(response);
+    void testGetNovelVoteCount_Success() {
+        // Given
+        Integer novelId = 1;
+        when(contentServiceClient.getNovelVoteCount(novelId)).thenReturn(voteCountResponse);
 
-        // Act
-        ApiResponse<Integer> result = contentServiceClient.getNovelVoteCount(1);
+        // When
+        ApiResponse<Integer> result = contentServiceClient.getNovelVoteCount(novelId);
 
-        // Assert
+        // Then
         assertNotNull(result);
-        assertEquals(100, result.getData());
-        verify(contentServiceClient).getNovelVoteCount(1);
-    }
-
-    @Test
-    void getChaptersByNovelId_Success() {
-        // Arrange
-        List<ChapterDetailResponseDTO> chapters = List.of(
-            createChapterDTO(1, "Chapter 1"),
-            createChapterDTO(2, "Chapter 2")
-        );
-        PageResponseDTO<ChapterDetailResponseDTO> pageResponse = new PageResponseDTO<>();
-        pageResponse.setContent(chapters);
-        pageResponse.setCurrentPage(0);
-        pageResponse.setSize(10);
-        pageResponse.setTotalElements(2L);
-        pageResponse.setTotalPages(1);
-
-        ApiResponse<PageResponseDTO<ChapterDetailResponseDTO>> response = ApiResponse.success(pageResponse);
-        
-        when(contentServiceClient.getChaptersByNovelId(1)).thenReturn(response);
-
-        // Act
-        ApiResponse<PageResponseDTO<ChapterDetailResponseDTO>> result = contentServiceClient.getChaptersByNovelId(1);
-
-        // Assert
-        assertNotNull(result);
+        assertEquals(200, result.getCode());
+        assertEquals("Success", result.getMessage());
         assertNotNull(result.getData());
-        assertEquals(2, result.getData().getContent().size());
-        assertEquals("Chapter 1", result.getData().getContent().get(0).getTitle());
-        assertEquals("Chapter 2", result.getData().getContent().get(1).getTitle());
-        verify(contentServiceClient).getChaptersByNovelId(1);
+        assertEquals(10, result.getData());
+
+        verify(contentServiceClient).getNovelVoteCount(novelId);
     }
 
     @Test
-    void getNovelByIdRaw_Success() {
-        // Arrange
-        ApiResponse<java.util.Map<String, Object>> response = ApiResponse.success(new java.util.HashMap<>());
-        
-        when(contentServiceClient.getNovelByIdRaw(1)).thenReturn(response);
+    void testIncrementVoteCount_Success() {
+        // Given
+        Integer novelId = 1;
+        when(contentServiceClient.incrementVoteCount(novelId)).thenReturn(stringResponse);
 
-        // Act
-        ApiResponse<java.util.Map<String, Object>> result = contentServiceClient.getNovelByIdRaw(1);
+        // When
+        ApiResponse<String> result = contentServiceClient.incrementVoteCount(novelId);
 
-        // Assert
+        // Then
         assertNotNull(result);
+        assertEquals(200, result.getCode());
+        assertEquals("Success", result.getMessage());
         assertNotNull(result.getData());
-        verify(contentServiceClient).getNovelByIdRaw(1);
+        assertEquals("OK", result.getData());
+
+        verify(contentServiceClient).incrementVoteCount(novelId);
     }
 
     @Test
-    void headlessGetNovelById_Success() {
-        // Arrange
-        feign.Response response = feign.Response.builder()
-            .status(200)
-            .reason("OK")
-            .request(feign.Request.create(feign.Request.HttpMethod.GET, "/api/v1/novels/1", 
-                java.util.Collections.emptyMap(), null, feign.Util.UTF_8))
-            .build();
-        
-        when(contentServiceClient.headlessGetNovelById(1)).thenReturn(response);
+    void testUpdateNovelRatingAndCount_Success() {
+        // Given
+        Integer novelId = 1;
+        Float avgRating = 4.5f;
+        Integer reviewCount = 10;
+        when(contentServiceClient.updateNovelRatingAndCount(novelId, avgRating, reviewCount)).thenReturn(stringResponse);
 
-        // Act
-        feign.Response result = contentServiceClient.headlessGetNovelById(1);
+        // When
+        ApiResponse<String> result = contentServiceClient.updateNovelRatingAndCount(novelId, avgRating, reviewCount);
 
-        // Assert
+        // Then
         assertNotNull(result);
-        assertEquals(200, result.status());
-        verify(contentServiceClient).headlessGetNovelById(1);
+        assertEquals(200, result.getCode());
+        assertEquals("Success", result.getMessage());
+        assertNotNull(result.getData());
+        assertEquals("OK", result.getData());
+
+        verify(contentServiceClient).updateNovelRatingAndCount(novelId, avgRating, reviewCount);
     }
 
-    // Helper methods
-    private ChapterDetailResponseDTO createChapterDTO(Integer id, String title) {
-        ChapterDetailResponseDTO dto = new ChapterDetailResponseDTO();
-        dto.setId(id);
-        dto.setUuid(UUID.randomUUID());
-        dto.setNovelId(1);
-        dto.setChapterNumber(id);
-        dto.setTitle(title);
-        dto.setContent("Content for " + title);
-        dto.setPreview("Preview for " + title);
-        dto.setWordCnt(1000);
-        dto.setIsPremium(false);
-        dto.setYuanCost(0.0f);
-        dto.setViewCnt(100L);
-        dto.setIsValid(true);
-        dto.setCreateTime(new Date());
-        dto.setUpdateTime(new Date());
-        dto.setPublishTime(new Date());
-        return dto;
+    @Test
+    void testGetChaptersByNovelId_Success() {
+        // Given
+        Integer novelId = 1;
+        when(contentServiceClient.getChaptersByNovelId(novelId)).thenReturn(pageResponse);
+
+        // When
+        ApiResponse<PageResponseDTO<ChapterDetailResponseDTO>> result = contentServiceClient.getChaptersByNovelId(novelId);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(200, result.getCode());
+        assertEquals("Success", result.getMessage());
+        assertNotNull(result.getData());
+        assertNotNull(result.getData().getContent());
+        assertEquals(1, result.getData().getContent().size());
+
+        verify(contentServiceClient).getChaptersByNovelId(novelId);
     }
 
-    private NovelDetailResponseDTO createNovelDTO(Integer id, String title) {
-        NovelDetailResponseDTO dto = new NovelDetailResponseDTO();
-        dto.setId(id);
-        dto.setUuid(UUID.randomUUID());
-        dto.setTitle(title);
-        dto.setAuthorId(UUID.randomUUID());
-        dto.setSynopsis("Synopsis for " + title);
-        dto.setCoverImgUrl("cover" + id + ".jpg");
-        dto.setStatus("PUBLISHED");
-        dto.setIsCompleted(false);
-        dto.setChapterCnt(10);
-        dto.setWordCnt(100000L);
-        dto.setViewCnt(1000L);
-        dto.setVoteCnt(100);
-        dto.setAvgRating(4.5f);
-        dto.setReviewCnt(50);
-        dto.setCreateTime(new Date());
-        dto.setUpdateTime(new Date());
-        dto.setPublishTime(new Date());
-        return dto;
+    @Test
+    void testGetNovelByIdRaw_Success() {
+        // Given
+        Integer novelId = 1;
+        Map<String, Object> rawData = Map.of("id", 1, "title", "Test Novel");
+        ApiResponse<Map<String, Object>> rawResponse = ApiResponse.success("Success", rawData);
+        when(contentServiceClient.getNovelByIdRaw(novelId)).thenReturn(rawResponse);
+
+        // When
+        ApiResponse<Map<String, Object>> result = contentServiceClient.getNovelByIdRaw(novelId);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(200, result.getCode());
+        assertEquals("Success", result.getMessage());
+        assertNotNull(result.getData());
+        assertEquals(1, result.getData().get("id"));
+
+        verify(contentServiceClient).getNovelByIdRaw(novelId);
+    }
+
+    @Test
+    void testHeadlessGetNovelById_Success() {
+        // Given
+        Integer novelId = 1;
+        Response mockResponse = mock(Response.class);
+        when(contentServiceClient.headlessGetNovelById(novelId)).thenReturn(mockResponse);
+
+        // When
+        Response result = contentServiceClient.headlessGetNovelById(novelId);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(mockResponse, result);
+
+        verify(contentServiceClient).headlessGetNovelById(novelId);
+    }
+
+    // Test default methods using a concrete implementation
+    @Test
+    void testGetChapter_DefaultMethod_Success() {
+        // Given
+        ContentServiceClient client = new ContentServiceClient() {
+            @Override
+            public ApiResponse<List<ChapterDetailResponseDTO>> getChaptersBatch(List<Integer> chapterIds) {
+                return chapterListResponse;
+            }
+
+            @Override
+            public ApiResponse<List<NovelDetailResponseDTO>> getNovelsBatch(List<Integer> novelIds) {
+                return novelListResponse;
+            }
+
+            @Override
+            public ApiResponse<NovelDetailResponseDTO> getNovelById(Integer novelId) {
+                return novelResponse;
+            }
+
+            @Override
+            public ApiResponse<Integer> getNovelVoteCount(Integer novelId) {
+                return voteCountResponse;
+            }
+
+            @Override
+            public ApiResponse<String> incrementVoteCount(Integer novelId) {
+                return stringResponse;
+            }
+
+            @Override
+            public ApiResponse<String> updateNovelRatingAndCount(Integer novelId, Float avgRating, Integer reviewCount) {
+                return stringResponse;
+            }
+
+            @Override
+            public ApiResponse<PageResponseDTO<ChapterDetailResponseDTO>> getChaptersByNovelId(Integer novelId) {
+                return pageResponse;
+            }
+
+            @Override
+            public ApiResponse<Map<String, Object>> getNovelByIdRaw(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public Response headlessGetNovelById(Integer novelId) {
+                return null;
+            }
+        };
+
+        // When
+        ChapterDetailResponseDTO result = client.getChapter(1);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(testChapter.getId(), result.getId());
+        assertEquals(testChapter.getTitle(), result.getTitle());
+    }
+
+    @Test
+    void testGetChapter_DefaultMethod_NullResponse() {
+        // Given
+        ContentServiceClient client = new ContentServiceClient() {
+            @Override
+            public ApiResponse<List<ChapterDetailResponseDTO>> getChaptersBatch(List<Integer> chapterIds) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<List<NovelDetailResponseDTO>> getNovelsBatch(List<Integer> novelIds) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<NovelDetailResponseDTO> getNovelById(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<Integer> getNovelVoteCount(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<String> incrementVoteCount(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<String> updateNovelRatingAndCount(Integer novelId, Float avgRating, Integer reviewCount) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<PageResponseDTO<ChapterDetailResponseDTO>> getChaptersByNovelId(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<Map<String, Object>> getNovelByIdRaw(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public Response headlessGetNovelById(Integer novelId) {
+                return null;
+            }
+        };
+
+        // When
+        ChapterDetailResponseDTO result = client.getChapter(1);
+
+        // Then
+        assertNull(result);
+    }
+
+    @Test
+    void testChapterExists_DefaultMethod_ValidChapter() {
+        // Given
+        ContentServiceClient client = new ContentServiceClient() {
+            @Override
+            public ApiResponse<List<ChapterDetailResponseDTO>> getChaptersBatch(List<Integer> chapterIds) {
+                return chapterListResponse;
+            }
+
+            @Override
+            public ApiResponse<List<NovelDetailResponseDTO>> getNovelsBatch(List<Integer> novelIds) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<NovelDetailResponseDTO> getNovelById(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<Integer> getNovelVoteCount(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<String> incrementVoteCount(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<String> updateNovelRatingAndCount(Integer novelId, Float avgRating, Integer reviewCount) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<PageResponseDTO<ChapterDetailResponseDTO>> getChaptersByNovelId(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<Map<String, Object>> getNovelByIdRaw(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public Response headlessGetNovelById(Integer novelId) {
+                return null;
+            }
+        };
+
+        // When
+        boolean result = client.chapterExists(1);
+
+        // Then
+        assertTrue(result);
+    }
+
+    @Test
+    void testChapterExists_DefaultMethod_InvalidChapter() {
+        // Given
+        testChapter.setIsValid(false);
+        ContentServiceClient client = new ContentServiceClient() {
+            @Override
+            public ApiResponse<List<ChapterDetailResponseDTO>> getChaptersBatch(List<Integer> chapterIds) {
+                return chapterListResponse;
+            }
+
+            @Override
+            public ApiResponse<List<NovelDetailResponseDTO>> getNovelsBatch(List<Integer> novelIds) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<NovelDetailResponseDTO> getNovelById(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<Integer> getNovelVoteCount(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<String> incrementVoteCount(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<String> updateNovelRatingAndCount(Integer novelId, Float avgRating, Integer reviewCount) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<PageResponseDTO<ChapterDetailResponseDTO>> getChaptersByNovelId(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<Map<String, Object>> getNovelByIdRaw(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public Response headlessGetNovelById(Integer novelId) {
+                return null;
+            }
+        };
+
+        // When
+        boolean result = client.chapterExists(1);
+
+        // Then
+        assertFalse(result);
+    }
+
+    @Test
+    void testGetChapterIdsByNovelId_DefaultMethod_Success() {
+        // Given
+        ContentServiceClient client = new ContentServiceClient() {
+            @Override
+            public ApiResponse<List<ChapterDetailResponseDTO>> getChaptersBatch(List<Integer> chapterIds) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<List<NovelDetailResponseDTO>> getNovelsBatch(List<Integer> novelIds) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<NovelDetailResponseDTO> getNovelById(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<Integer> getNovelVoteCount(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<String> incrementVoteCount(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<String> updateNovelRatingAndCount(Integer novelId, Float avgRating, Integer reviewCount) {
+                return null;
+            }
+
+            @Override
+            public ApiResponse<PageResponseDTO<ChapterDetailResponseDTO>> getChaptersByNovelId(Integer novelId) {
+                return pageResponse;
+            }
+
+            @Override
+            public ApiResponse<Map<String, Object>> getNovelByIdRaw(Integer novelId) {
+                return null;
+            }
+
+            @Override
+            public Response headlessGetNovelById(Integer novelId) {
+                return null;
+            }
+        };
+
+        // When
+        List<Integer> result = client.getChapterIdsByNovelId(1);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(testChapter.getId(), result.get(0));
     }
 }
