@@ -1,66 +1,36 @@
-# Test Configuration for Engagement Service
-# This file overrides production config for testing
-
 spring:
-  application:
-    name: engagement-service
-
-  # Test Database Configuration
+  security:
+    user:
+      name: test
+      password: test
   datasource:
     url: jdbc:h2:mem:testdb
     driver-class-name: org.h2.Driver
     username: sa
     password: 
-
-  # Disable JPA for tests
   jpa:
     hibernate:
       ddl-auto: create-drop
     show-sql: false
-
-  # Disable Flyway for tests
-  flyway:
-    enabled: false
-
-  # MyBatis Configuration
-  mybatis:
-    mapper-locations: classpath:/mapper/**Mapper.xml
-    type-aliases-package: com.yushan.engagement_service.entity
-
-  # Test Redis Configuration
-  data:
-    redis:
-      host: localhost
-      port: 6379
-
-  # Test Kafka Configuration
-  kafka:
-    bootstrap-servers: localhost:9092
-
-# Server Configuration
-server:
-  port: 0  # Random port for tests
-
-# Disable Eureka for tests
-eureka:
-  client:
-    enabled: false
+  h2:
+    console:
+      enabled: true
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
 
 # JWT Configuration for tests
 jwt:
-  secret: test-secret-key-for-jwt-token-generation-and-validation-2024
-  issuer: test-micro-service
-  algorithm: HS256
+  secret: "test-secret-key-that-is-long-enough-for-hmac-sha-algorithms-to-work-properly"
+  issuer: "engagement-service-test"
 
-# File Storage Configuration for tests
-app:
-  storage:
-    local:
-      path: uploads
-
-# Logging Configuration
 logging:
   level:
-    com.yushan.engagement: DEBUG
-    org.springframework.cloud: WARN
-    org.springframework.security: WARN
+    org.springframework.security: DEBUG
+    com.yushan.engagement_service: DEBUG
