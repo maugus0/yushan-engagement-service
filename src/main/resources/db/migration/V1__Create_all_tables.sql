@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS comment (
 -- Review table for novel reviews
 CREATE TABLE review (
     id SERIAL PRIMARY KEY,
-    uuid UUID NOT NULL DEFAULT gen_random_uuid(),
+    uuid UUID NOT NULL,
     user_id UUID NOT NULL,
     novel_id INTEGER NOT NULL,
     rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
