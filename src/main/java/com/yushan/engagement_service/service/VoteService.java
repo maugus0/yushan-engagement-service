@@ -63,12 +63,16 @@ public class VoteService {
             throw new ValidationException("Vote check failed: data is missing");
         }
         
-        if (!voteCheckResponse.getData().isCanVote()) {
-            String message = voteCheckResponse.getData().getMessage();
+        VoteCheckResponseDTO voteCheck = voteCheckResponse.getData();
+        if (!voteCheck.isCanVote()) {
+            String message = voteCheck.getMessage();
             throw new ValidationException(
                 message != null ? message : "Not enough Yuan to vote"
             );
         }
+        
+        // Calculate remained Yuan after voting (1 Yuan per vote)
+        Float remainedYuan = (float) (voteCheck.getCurrentYuanBalance() - 1.0);
 
         // Create vote (no toggle per backend logic; always create and charge 1 yuan)
         Vote vote = new Vote();
@@ -92,7 +96,7 @@ public class VoteService {
                 userId
         );
 
-        return new VoteResponseDTO(novelId, updatedVoteCount, true);
+        return new VoteResponseDTO(novelId, updatedVoteCount, true, remainedYuan);
     }
 
     public PageResponseDTO<VoteUserResponseDTO> getUserVotes(UUID userId, int page, int size) {
