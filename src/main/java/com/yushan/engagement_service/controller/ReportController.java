@@ -23,7 +23,6 @@ import java.util.UUID;
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/reports")
-@CrossOrigin(origins = "*")
 @Tag(name = "Report Management", description = "APIs for managing content reports")
 public class ReportController {
 

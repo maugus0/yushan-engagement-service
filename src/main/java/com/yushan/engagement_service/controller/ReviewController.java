@@ -20,7 +20,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/reviews")
-@CrossOrigin(origins = "*")
 @Tag(name = "Review Management", description = "APIs for managing reviews")
 public class ReviewController {
 
