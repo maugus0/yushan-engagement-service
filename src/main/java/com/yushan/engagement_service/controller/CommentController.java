@@ -19,7 +19,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/comments")
-@CrossOrigin(origins = "*")
 @Tag(name = "Comment Management", description = "APIs for managing comments")
 public class CommentController {
 

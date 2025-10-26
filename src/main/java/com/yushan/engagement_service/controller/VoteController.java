@@ -16,7 +16,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/votes")
-@CrossOrigin(origins = "*")
 @Tag(name = "Vote Management", description = "APIs for managing votes")
 public class VoteController {
 
